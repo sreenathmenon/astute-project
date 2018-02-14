@@ -59,7 +59,7 @@ def get_projects(request):
 
     #Role based check has to be added
     #Passing the admin paramter temporarily to fix issue while loading as users with provisioning, finance, support or catalogue roles
-    return keystone.tenant_list(request, admin=False)[0]
+    return keystone.tenant_list(request)[0]
 
 # @returns project
 def get_project(request, id):
