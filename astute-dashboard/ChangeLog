@@ -1,0 +1,159 @@
+CHANGES
+=======
+
+* signup workflow re-factoring
+* signup re-factoring initial commit
+* Plan flavor details in instance launch dialog
+* disable Volume Limits section in volume create dialog
+* fix markup error
+* add `$` mark for invoice details Total sum
+* add `Total` row into invoice details
+* fix empty volumes list quota usage
+* volume create dialog - volume types usage
+* export fix
+* fix invoice subtotals formatting
+* fix currencies format
+* add $ mark to currencies
+* invoices currency formatting
+* add Service Id column to admin/invoices table
+* exports fix
+* adjust astute project/instances panel identifier
+* adjust astute project/instances reverse URL
+* fix M1 project/instances panel title
+* project/volumes plugin enable file
+* adjust project/volumes plugin imports
+* add volume type quota dispaly in volume create dialog
+* project/vilumes plugin
+* volume type quotas form handling fix
+* add Account readonly field to Volume Quotas form
+* invoices export fix
+* fix trailer record typo
+* volume type quotas form fix
+* account volume type quotas
+* invoices export fix
+* identity/billing plugin keystone client v3 fix
+* identity/billing plugin keystone client v3 fix
+* instance plan dissociation fix
+* instance plan disassociation fix
+* invoces export fix
+* fix utf-8 exporting
+* customer VM launch fix
+* invoice CVS export fix
+* add sub_total column into invoice details table
+* invoices export adjustments
+* project update bugfix
+* invoice details table columns widths adjustments
+* add discount amount column into invoice details table
+* adjust invoice details view with additional items data
+* fix dat export
+* invoce export fixes and adjustments
+* remove unneeded RAB functionality
+* fixes
+* fixes
+* invoices CSV export
+* fix indentation
+* bugfixes
+* discount rework; *.pyc cleanup
+* export/download invoice(s) in DAT format
+* fix merge conflict
+* Admin / Billing / Invoices filtering
+* fix plan `attrs` handling
+* RAB plans `attrs` handling
+* PaYG plans association/disassociation
+* add `qty` field handling for non-IaaS plans
+* 
+* 
+* 
+* fix master merge conflict
+* remove unneeded project dialog workflow
+* fixes
+* clean up
+* account discount mapping bugfix
+* bugfix: add required routine param `request`
+* switch on `Modify Quotas` table action availability handling
+* bugfix: add required routine param `request`
+* discounts support; RAB account quotas suuport
+* cleanup
+* admin plan mappings UI; admin invoices mappin UI
+* astute horizon plugin
+* M1 integration
+* Pull request corresponding to the changes related to comment privacy (#42)
+* Update api.py (#41)
+* Update forms.py (#40)
+* fix region handling
+* add project/tenant details creation date and signup date
+* Modifying the table headers
+* Updating the readme file
+* Modification for the pagination
+* Committing the sidecar dashboard
+* Adding an extra option in settings file
+* Update tabs.py
+* regions support; contact_extra field support
+* Updating the Readme file
+* Updating the Readme file
+* Moving the readme file to sidecar folder
+* Adding the Readme file
+* Adding the latest files of sidecar dashboard plugin
+* add project credit support #2
+* add project credit support
+* api.py
+* ssl verification false for chef server
+* remove zendesk timezone tag
+* bugfix tabs file
+* fix billing data form handling
+* fix project billing data form handling
+* V2 and v3 support of zendesk
+* Installation help
+* Zendesk support design
+* zendesk support
+* Update README.md
+* update README.md
+* support for signups tables configured page size
+* signups table pagination
+* adjustments and bugfixes
+* fix cipher issues
+* intermediate commit
+* 0.1.0_pre-alpha
+* Invoice Update Issue fix - 0.00 update issue
+* keystone API v3 fixes
+* Modifications for invoice cost display and sorting
+* Image/Snapshot rating - Invoice display change
+* Tenant Addon rating added - Horizon display modification
+* remove *.swp files
+* reimplement billing admin functionality with `billing-admin` role
+* Adding billing panel
+* fix project create/update dialogs for v3 API
+* removed billing data 'required' validation
+* modifications after instance add-on features
+* Modifications in horizon - After removing bson and timestamp to date change
+* fix and clean-up
+* Fix for CC type dropdown, remove CC security code storing
+* rename 'Identity' dasboard to 'Account'
+* Account group adjustments
+* xproject, xusers & billing dashboards adjustments
+* remove brew
+* modifications after json issue fix
+* re-enable CIPHER_KEY from local_setting.py
+* added shared CIPHER_KEY
+* added cipher module, fixed its import
+* Extended Users/Projects panels
+* Adding myinvoice plugin
+* Adding myinvoice plugin
+* Adding __init__.py file
+* prettify Chef table layout
+* pretty print Chef node details
+* Chef node details view
+* fix Inventory permissions issue
+* fix Inventory permissions
+* Update README.md
+* Update README.md
+* Delete cli.py
+* Delete horizon.pem
+* Update README.md
+* Update README.md
+* add Inventory/Chef & Inventory/Nodes local_settings.py configuration
+* Update README.md
+* Update README.md
+* added README.md
+* clean up
+* added plugins: inventory/chef and inventory/nodes

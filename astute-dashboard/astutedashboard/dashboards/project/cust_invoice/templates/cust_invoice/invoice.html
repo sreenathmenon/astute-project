@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Invoice Details"%}{% endblock %}
+
+{% block main %}
+<h3>{% trans "Invoice Details" %}</h3>
+<div class="col-sm-12 row detail">
+    <hr class="header_rule">
+    <dl class="dl-horizontal">
+	{% if invoice %}
+  		<dt>{% trans "Invoice Code" %}</dt>
+  		<dd>{{ invoice.inv_code|default:_("None") }}</dd>
+  		<dt>{% trans "Account" %}</dt>
+  		<dd>{{ invoice.user|default:_("None") }}</dd>
+  		<dt>{% trans "Invoice Date" %}</dt>
+  		<dd>{{ invoice.inv_date }}</dd>
+  		<dt>{% trans "Invoice Period" %}</dt>
+  		<dd>from {{ invoice.inv_from }} to {{ invoice.inv_to }}</dd>
+  		<dt>{% trans "Total" %}</dt>
+  		<dd>${{ invoice.total_amt|floatformat:2 }}</dd>
+  		<dt>{% trans "Balance" %}</dt>
+  		<dd>${{ invoice.balance_amt|floatformat:2 }}</dd>
+  		<dt>{% trans "Paid" %}</dt>
+  		<dd>${{ invoice.amt_paid|floatformat:2 }}</dd>
+  		<dt>{% trans "Last Updated" %}</dt>
+  		<dd>{{ invoice.last_updated }}</dd>
+  		<dt>{% trans "Notes" %}</dt>
+  		<dd>{{ invoice.notes }}</dd>
+  		<dt>{% trans "Status" %}</dt>
+  		<dd>{{ invoice.status}}</dd>
+	{% else %}
+	    <dt>No details found</dt>
+	{% endif %}
+    </dl>
+</div>
+<table class="table table-bordered table-striped" id="invoice">
+    <thead>
+        <tr class="table_caption">
+            <th colspan="6" class="table_header" data-column="0">
+                <h3 class="table_title">Price Splitup</h3>
+                <div class="table_actions clearfix"></div>
+            </th>
+        </tr>
+        <tr class="tablesorter-headerRow">
+            <th class="normal_column" width="30%">Plan</th>
+            <th class="normal_column" width="15%">Usage Period</th>
+            <th class="normal_column" width="10%">Rate ($)</th>
+            <th class="normal_column" width="5%">Qty.</th>
+            <th class="normal_column" width="10%">SubTotal ($)</th>
+            <th class="normal_column" width="10%">Discount</th>
+            <th class="normal_column" width="10%">Discount Amt. ($)</th>
+            <th class="normal_column" width="10%">Total ($)</th>
+        </tr>
+    </thead>
+    <tbody>
+    		{% for item in invoice.items %}
+                <tr class="{% cycle 'even' 'odd' %}">
+                    <td class="normal_column">{{item.plan}}</td>
+                    <td class="normal_column">{{item.bill_start_date}} to {{item.bill_end_date}}</td>
+                    <td class="normal_column">{{item.rate|floatformat:2}}</td>
+                    <td class="normal_column">{{item.qty}}</td>
+                    <td class="normal_column">{{item.sub_total|floatformat:2}}</td>
+                    <td class="normal_column">{{item.discount}}</td>
+                    <td class="normal_column">{{item.discount_amt|floatformat:2}}</td>
+                    <td class="normal_column">{{item.total_amt|floatformat:2}}</td>
+                </tr>
+    		{% endfor %}
+                <tr>
+                  <td colspan="7" style="text-align: right"><b>Total:</b></td>
+                  <td><b>${{ invoice.total_amt|floatformat:2 }}</b></td>
+                </tr>
+    </tbody>
+</table>
+{% endblock %}

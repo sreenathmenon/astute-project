@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Plan Details"%}{% endblock %}
+
+{% block main %}
+<h3>{% trans "Plan Details" %}</h3>
+<div class="col-sm-12 row detail">
+    <hr class="header_rule">
+    <dl class="dl-horizontal">
+	{% if plan_details %}
+  		<dt>{% trans "Plan Name" %}</dt>
+  		<dd>{{ plan_details.name|default:_("None") }}</dd>
+  		<dt>{% trans "Description" %}</dt>
+  		<dd>{{ plan_details.description }}</dd>
+  		<dt>{% trans "Service Name" %}</dt>
+  		<dd>{{ plan_details.service_name|default:_("None") }}</dd>
+  		<dt>{% trans "Current Status" %}</dt>
+  		<dd>{{ plan_details.status }}</dd>
+  		<dt>{% trans "Rate" %}</dt>
+  		<dd>{{ plan_details.rate | floatformat:2 }}</dd>
+  		<dt>{% trans "Setup Fee" %}</dt>
+  		<dd>{{ plan_details.setup_fee | floatformat:2 }}</dd>	
+	{% else %}
+	    <dt>No details found</dt>
+	{% endif %}
+    </dl>
+</div>
+
+{% endblock %}
+

@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load i18n %} 
+{% block title %}{% trans "Available Plans"%}{% endblock %} 
+{% block main %}
+
+<h1>{% trans "Available Plans" %}</h1>
+
+<div class="col-sm-12 row detail">
+	<hr class="header_rule">
+	<dl class="dl-horizontal">
+		{% if user_billing_code == 'rab' or user_billing_code == 'payg' %}
+		    <table class="table table-bordered table-striped" id="invoice">
+			    <thead>
+				    <tr class="table_caption">
+					    <th colspan="6" class="table_header" data-column="0">
+						    <div class="table_actions clearfix"></div>
+					    </th>
+				    </tr>
+					<tr class="tablesorter-headerRow">
+						<th class="normal_column">Name</th>
+						<th class="noraml_column">Description</th>
+						<th class="normal_column">Service</th>
+						<th class="normal_column">Rate</th>
+						<th class="normal_column">Setup Fee</th>
+						<th class="normal_column"></th>
+					</tr>
+				</thead>
+				<tbody>
+			    	{% if plans  %}
+				    	{% for plan in plans %}
+				        	<tr class="{% cycle 'even' 'odd' %}">
+ 					        	{% url 'horizon:project:customer_available_plans:activate_user_plan' plan.id as plan_activation_url %}
+ 					        	{% url 'horizon:project:customer_available_plans:user_avbl_plan_details' plan.id as plan_details_url %}						
+						    	<td class="normal_column">
+						        	<a href="{{ plan_details_url }}">{{plan.name}}</a>
+						    	</td>
+						    	<td class="normal_column">{{plan.description}}</td>
+						    	<td class="normal_column">{{plan.service_name}}</td>
+					        	<td class="normal_column">{{plan.rate | floatformat:2}}</td>
+					        	<td class="normal_column">{{plan.setup_fee | floatformat:2}}</td>
+					        	<td class="normal_column" style ="text-align:center;">
+					        	    <a href="{{ plan_activation_url }}" class="btn ajax-modal ajax-update" style ="background-color:#0c4da2; color: #fff; text-align: center" role="button">Activate Plan</a>
+					        	</td>
+				        	</tr>
+				    	{% endfor %}
+					{% else %}
+				        	<tr>
+				            	<td colspan="6" style="text-align:center">No items to display.</td>
+				        	</tr>
+					{% endif %}
+				</tbody>
+			</table>
+		{% else %}
+		    <table class="table table-bordered table-striped" id="invoice">
+				<thead>
+					<tr class="table_caption">
+						<th colspan="6" class="table_header" data-column="0">
+							<div class="table_actions clearfix"></div>
+						</th>
+					</tr>
+					<tr class="tablesorter-headerRow">
+						<th class="normal_column">Name</th>
+						<th class="normal_column">Description</th>
+						<th class="normal_column">Service</th>
+						<th class="normal_column">Rate</th>
+						<th class="normal_column">Setup fee</th>
+						<th class="normal_column">Action</th>
+					</tr>
+				</thead>
+			    <tbody>
+			        <tr>
+				        <td colspan="6" style="text-align:center; border-left: 0 !important; border-right: 0 !important;">Plans will be available only if you are assigned to a Billing Type.</td>
+				    </tr>
+			    </tbody>
+				
+		{% endif %}
+	</dl>
+</div>
+{% endblock %}

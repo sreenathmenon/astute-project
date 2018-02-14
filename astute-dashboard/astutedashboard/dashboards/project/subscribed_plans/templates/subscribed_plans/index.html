@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load i18n %} 
+{% block title %}{% trans "Subscribed Plans"%}{% endblock %} 
+{% block main %}
+<h1>{% trans "Subscribed Plans" %}</h1>
+
+<div class="col-sm-12 row detail">
+	<hr class="header_rule">
+	<dl class="dl-horizontal">
+			<table class="table table-bordered table-striped" id="invoice">
+				<thead>
+					<tr class="table_caption">
+						<th colspan="8" class="table_header" data-column="0">		    	
+							<div class="table_actions clearfix"></div>
+						</th>
+					</tr>
+					<tr class="tablesorter-headerRow">
+						<th class="normal_column">Name</th>
+						<th class="normal_column">Description</th>
+						<th class="normal_column">Service</th>
+						<th class="normal_column">Status</th>
+						<th class="normal_column">Quantity</th>
+						<th class="normal_column">Activation Date</th>
+						<th class="normal_column">Inactive On</th>
+						<th class="normal_column">Contract (mnths)</th>
+					</tr>
+				</thead>
+				<tbody>
+			    	{% if plans  %}
+				    	{% for plan in plans %}
+							<tr class="{% cycle 'even' 'odd' %}">
+				 				{% url 'horizon:project:customer_subscribed_plans:user_sub_plan_details' plan.plan_id as plan_details_url %}					
+								<td class="normal_column">
+					    			<a href="{{ plan_details_url }}">{{plan.name}}</a>
+								</td>
+								<td class="normal_column">{{plan.description}}</td>
+								<td class="normal_column">{{plan.service_name}}</td>
+								<td class="normal_column">{{plan.status}}</td>
+								<td class="normal_column">{{plan.qty}}</td>
+								<td class="normal_column">{{plan.created_on}}</td>
+								<td class="normal_column">{{plan.inactive_on}}</td>
+								<td class="normal_column">{{plan.contract_period}}</td>
+							</tr>
+				    	{% endfor %}
+					{% else %}
+				    	    <tr>
+				            	<td colspan="8" style="text-align:center; border-left: 0 !important; border-right: 0 !important;">No items to display.</td>
+				        	</tr>
+					{% endif %}
+				</tbody>
+			</table>
+	</dl>
+</div>
+{% endblock %}

@@ -1,0 +1,85 @@
+{
+    "context_is_admin": "role:admin",
+    "default": "",
+
+    "provisioning_role": "role:provisioning",
+    "provisioning_required": "rule:provisioning_role",
+
+    "finance_role": "role:finance",
+    "finance_required": "rule:finance_role",
+
+    "techsupport_role": "role:support",
+    "techsupport_required": "rule:techsupport_role",
+
+    "productcatalogue_role": "role:catalogue",
+    "productcatalogue_required": "rule:productcatalogue_role",
+
+    "billing:get_type": "",
+    "billing:list_type": "",
+    "billing:create_type": "rule:context_is_admin or rule:productcatalogue_required",
+    "billing:edit_type": "rule:context_is_admin or rule:productcatalogue_required",
+    "billing:delete_type": "rule:context_is_admin or rule:productcatalogue_required",
+    
+    "billing:get_map": "",
+    "billing:list_map": "",
+    "billing:create_map": "rule:context_is_admin or rule:provisioning_required",
+    "billing:edit_map": "rule:context_is_admin or rule:provisioning_required",
+    "billing:delete_map": "rule:context_is_admin or rule:provisioning_required",
+    "billing:get_user_map": "",
+    
+    "discount:get_type": "",
+    "discount:list_type": "",
+    
+    "discount:get": "",
+    "discount:list": "",
+    "discount:create": "rule:context_is_admin or rule:productcatalogue_required",
+    "discount:edit": "rule:context_is_admin or rule:productcatalogue_required",
+    "discount:delete": "rule:context_is_admin or rule:productcatalogue_required",
+    
+    "discount:get_map": "",
+    "discount:list_map": "", 
+    "discount:create_map": "rule:context_is_admin or rule:provisioning_required",
+    "discount:edit_map": "rule:context_is_admin or rule:provisioning_required",
+    "discount:delete_map": "rule:context_is_admin or rule:provisioning_required",
+    
+    "invoice:get": "",
+    "invoice:list": "",
+    "invoice:generate": "rule:context_is_admin",
+    "invoice:edit": "rule:context_is_admin",
+
+    "plans:get": "",
+    "plans:list": "",
+    "plans:create": "rule:context_is_admin or rule:productcatalogue_required",
+    "plans:edit": "rule:context_is_admin or rule:productcatalogue_required",
+    "plans:delete": "rule:context_is_admin or rule:productcatalogue_required",
+    
+    "plan:get": "",
+    "plan:list": "",
+    "plan:create": "rule:context_is_admin or rule:productcatalogue_required",
+    "plan:edit": "rule:context_is_admin or rule:productcatalogue_required",
+    "plan:delete": "rule:context_is_admin or rule:productcatalogue_required",
+    
+    "plan:get_map": "",
+    "plan:list_map": "",
+    "plan:unassociated_plans": "",
+    "plan:user_map": "",
+    "plan:create_map": "rule:context_is_admin or rule:provisioning_required",
+    "plan:edit_map": "rule:context_is_admin or rule:provisioning_required",
+    "plan:delete_map": "rule:context_is_admin or rule:provisioning_required", 
+    "plan:associate": "rule:context_is_admin or rule:provisioning_required",
+    "plan:dissociate": "rule:context_is_admin or rule:provisioning_required",
+    "plan:update_status_map": "rule:context_is_admin or rule:provisioning_required",
+    
+    "plan_attr:get": "",
+    "plan_attr:list": "", 
+    "plan_attr:create": "rule:context_is_admin or rule:productcatalogue_required",
+    "plan_attr:edit": "rule:context_is_admin or rule:productcatalogue_required",
+    "plan_attr:delete": "rule:context_is_admin or rule:productcatalogue_required",
+    
+    "service_type:get": "",
+    "service_type:list": "",
+    "service_type:create": "rule:context_is_admin or rule:productcatalogue_required",
+    "service_type:edit": "rule:context_is_admin or rule:productcatalogue_required",
+    "service_type:delete": "rule:context_is_admin or rule:productcatalogue_required"
+}
+

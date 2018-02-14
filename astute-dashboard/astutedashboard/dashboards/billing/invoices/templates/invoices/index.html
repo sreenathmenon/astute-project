@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}{% trans "Billing Invoices" %}{% endblock %}
+
+{% block main %}
+    <form id="admin-billing-invoices-filter" class="form-inline">
+        <label for="admin-billing-invoices-filter-account">Account:&nbsp;</label>
+        <select id="admin-billing-invoices-filter-account" class="form-control span5" name="project_id">
+            <option value="">Any</option>
+            {% for account in accounts %}
+            {% if account.user_id == admin_billing_invoices_filter_account %}
+            <option value="{{ account.user_id }}" selected>{{ account.user }}</option>
+            {% else %}
+            <option value="{{ account.user_id }}">{{ account.user }}</option>
+            {% endif %}
+            {% endfor %}
+        </select>
+        <label>&nbsp;&nbsp;&nbsp;Date&nbsp;</label>
+        <label for="admin-billing-invoices-filter-period-from">From:</label>
+        <input id="admin-billing-invoices-filter-period-from" class="form-control" type="date" name="usage_period_from" value="{{ admin_billing_invoices_filter_period_from }}">
+        <label for="admin-billing-invoices-filter-period-to">&nbsp;To:</label>
+        <input id="admin-billing-invoices-filter-period-to" class="form-control" type="date" name="usage_period_to" value="{{ admin_billing_invoices_filter_period_to }}">
+        &nbsp;&nbsp;
+        <a id="admin-billing-invoices-filter-search" class="btn btn-default">
+            <span class="fa fa-search search-icon"></span>&nbsp;Search&#8230;
+        </a>
+        <div class="btn-group pull-right">
+            <button class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                <span class="fa fa-download"></span>&nbsp;Export&#8230&nbsp;<span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+                <li><a id="admin-billing-invoices-export-as-dat" href="*/export_as_dat">Export as DAT&#8230</a></li>
+                <li><a id="admin-billing-invoices-export-as-csv" href="*/export_as_csv">Export as CSV&#8230</a></li>
+            </ul>
+        </div>
+    </form>
+    <script>
+
+        /* search filter handler */
+        function search_filter_handler () {
+            // horizon admin invoices filter handler
+            var url = '{{ admin_billing_invoices_filter_endpoint }}'
+            // show spinner
+            horizon.modals.modal_spinner('Loading')
+            // setup params
+            var params = {
+                'account': $('#admin-billing-invoices-filter-account').val(),
+                'period_from': $('#admin-billing-invoices-filter-period-from').val(),
+                'period_to': $('#admin-billing-invoices-filter-period-to').val()
+            }
+            // send filter params
+            console.log('setting admin/billing/invoice filter: ', url)
+            $.get(url, params).always(function () {
+                // reload page
+                location.reload();
+            })
+        }
+
+        /* download helper */
+        function download (url) {
+            $('<iframe />')
+                .attr('src', url)
+                .hide()
+                .appendTo('body');
+        }
+
+        /* export as dat handler */
+        function export_as_handler (event) {
+            var url = $(event.target).attr('href')
+            // append invoice id for single download
+            event.preventDefault()
+            event.stopPropagation();
+            // trick for hide dropdown
+            $('body').trigger('click')
+            download(url)
+        }
+
+        /* entry point (DOM ready) */
+        $(document).ready(function () {
+            /* setup even handlers */
+            //$('#admin-billing-invoices-filter-account').on('change', search_filter_handler)
+            $('#admin-billing-invoices-filter-search').on('click', search_filter_handler)
+            $('#admin-billing-invoices-export-as-dat').on('click', export_as_handler)
+            $('.admin-billing-invoice-export-as-dat').on('click', export_as_handler)
+            $('#admin-billing-invoices-export-as-csv').on('click', export_as_handler)
+            $('.admin-billing-invoice-export-as-csv').on('click', export_as_handler)
+        })
+    </script>
+    {{ table.render }}
+{% endblock %}
