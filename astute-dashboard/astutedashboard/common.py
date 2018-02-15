@@ -24,7 +24,14 @@ from openstack_dashboard.local.local_settings import \
     ADMIN_AUTH_URL, \
     ADMIN_USERNAME, \
     ADMIN_PASSWORD, \
-    ADMIN_TENANT
+    ADMIN_TENANT, \
+    OPENSTACK_API_VERSIONS
+
+if OPENSTACK_API_VERSIONS['identity'] == 3:
+    from keystoneclient.v3 import client as ksclient
+else:
+    from keystoneclient.v2_0 import client as ksclient
+
 
 import requests as http
 
@@ -46,6 +53,19 @@ def astute(request, endpoint, method='GET', data=None):
 
     return response.json()
 
+#Added as some of the admin functionality has to be given for M1 specific roles too
+def get_admin_ksclient():
+    keystone = ksclient.Client(
+        username    = ADMIN_USERNAME,
+        password    = ADMIN_PASSWORD,
+        tenant_name = ADMIN_TENANT,
+        auth_url    = ADMIN_AUTH_URL
+    )
+    if OPENSTACK_API_VERSIONS['identity'] == 3:
+        keystone.tenants = keystone.projects
+    return keystone
+
+
 #
 # Common OpenStack API helpers
 #
@@ -59,7 +79,9 @@ def get_projects(request):
 
     #Role based check has to be added
     #Passing the admin paramter temporarily to fix issue while loading as users with provisioning, finance, support or catalogue roles
-    return keystone.tenant_list(request)[0]
+    ks = get_admin_ksclient()
+    return ks.tenants.list()
+    #return keystone.tenant_list(request, admin=False)[0]
 
 # @returns project
 def get_project(request, id):
@@ -67,7 +89,9 @@ def get_project(request, id):
     #    tenant_name=ADMIN_TENANT, auth_url=ADMIN_AUTH_URL)
     #Ssess = session.Session(auth=auth)
     #keystone = KeystoneClient(session=sess)
-    return keystone.tenant_get(request, id)
+    ks = get_admin_ksclient()
+    return ks.tenants.get(id)
+    #return keystone.tenant_get(request, id)
 
 # @returns list of defined flavors
 def get_flavors(request):
@@ -242,7 +266,8 @@ def get_billing_type_mappings(request, verbose=False):
 
 def get_billing_type_mapping(request, id, verbose=False):
     data = astute(request, 'billing/mapping/' + str(id))
-    data['project'] = keystone.tenant_get(request, data['user'])
+    #data['project'] = keystone.tenant_get(request, data['user'])
+    data['project'] =  get_project(request, data['user'])
     data['discount_mapping'] = get_type_mapping_discount_mapping(request, id, verbose)
     return data
 
@@ -530,4 +555,5 @@ def get_user_billing_type(request, verbose=False):
     user_id = request.user.tenant_id
     data = astute(request, 'billing/mapping/user?id=' + str(user_id))
     return data
+
 

@@ -111,9 +111,13 @@ class ModifyBillingPlanMappingForm(forms.SelfHandlingForm):
         try:
             cur_plan_map = get_billing_plan_mapping(request, id)
 
-            modify_billing_plan_mapping(request, id, data)
-
+            #Only following 2 values are accepted for updation
+            billing_plan_data = {}
+            billing_plan_data['status'] = data.pop('status', None)
+            billing_plan_data['contract_period'] = data.pop('contract_period', None)
+            modify_billing_plan_mapping(request, id, billing_plan_data)
             return True
 
         except Exception:
             exceptions.handle(request, _('Unable to modify billing plan mapping.'))
+
