@@ -26,11 +26,6 @@ from openstack_dashboard.local.local_settings import OPENSTACK_API_VERSIONS, \
 class Tenants(horizon.Panel):
     name = _("Projects")
     slug = 'xprojects'
+    policy_rules = (("identity", "identity:view_projects"),)
 
-    '''
-    policy_rules = (("identity", "identity:list_projects"),
-                    ("identity", "identity:list_user_projects"))
-    '''
 
-    permissions = (('openstack.roles.admin', 'openstack.roles.owner',
-                    'openstack.roles.operator', 'openstack.roles.member'),)
