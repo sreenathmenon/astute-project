@@ -90,7 +90,8 @@ class UsageLink(tables.LinkAction):
     verbose_name = _("View Usage")
     url = "horizon:identity:xprojects:usage"
     icon = "stats"
-    policy_rules = (("compute", "compute_extension:simple_tenant_usage:show"),)
+    policy_rules = (("compute", "compute_extension:simple_tenant_usage:show"), 
+                    ("identity", "identity:create_project"),)
 
     #def allowed(self, request, project):
     #    return request.user.is_superuser
