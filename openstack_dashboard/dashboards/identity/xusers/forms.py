@@ -145,7 +145,7 @@ class CreateUserForm(PasswordMixin, BaseUserForm):
                                  initial=True)
     first_name = forms.CharField(label=_("First Name"), required=True)
     last_name = forms.CharField(label=_("Last Name"), required=True)
-    phone_num = forms.CharField(label=_("Phone Number"))
+    phone = forms.CharField(label=_("Phone Number"))
 
     def __init__(self, *args, **kwargs):
         roles = kwargs.pop('roles')
@@ -154,7 +154,7 @@ class CreateUserForm(PasswordMixin, BaseUserForm):
         ordering = ["domain_id", "domain_name", "name",
                     "description", "email", "password",
                     "confirm_password", "project", "role_id", 
-                    "first_name", "last_name", "phone_num", 
+                    "first_name", "last_name", "phone", 
                     "enabled"]
         # Starting from 1.7 Django uses OrderedDict for fields and keyOrder
         # no longer works for it
@@ -283,7 +283,7 @@ class UpdateUserForm(BaseUserForm):
     
     first_name = forms.CharField(label=_("First Name"), required=True)
     last_name  = forms.CharField(label=_("Last Name"), required=True)
-    phone_num  = forms.CharField(label=_("Phone Number"))
+    phone  = forms.CharField(label=_("Phone Number"))
 
     def __init__(self, request, *args, **kwargs):
         super(UpdateUserForm, self).__init__(request, *args, **kwargs)
