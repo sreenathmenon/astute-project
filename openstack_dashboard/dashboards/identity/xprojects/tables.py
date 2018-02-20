@@ -57,7 +57,8 @@ class UpdateMembersLink(tables.LinkAction):
     classes = ("ajax-modal",)
     icon = "pencil"
     policy_rules = (("identity", "identity:list_users"),
-                    ("identity", "identity:list_roles"))
+                    ("identity", "identity:list_roles"),
+                    ("identity", "identity:create_project"),)
 
     def get_link_url(self, project):
         step = 'update_members'
@@ -91,8 +92,8 @@ class UsageLink(tables.LinkAction):
     icon = "stats"
     policy_rules = (("compute", "compute_extension:simple_tenant_usage:show"),)
 
-    def allowed(self, request, project):
-        return request.user.is_superuser
+    #def allowed(self, request, project):
+    #    return request.user.is_superuser
 
 
 class CreateProject(tables.LinkAction):
@@ -125,7 +126,8 @@ class ModifyQuotas(tables.LinkAction):
     url = "horizon:identity:xprojects:update"
     classes = ("ajax-modal",)
     icon = "pencil"
-    policy_rules = (('compute', "compute_extension:quotas:update"),)
+    policy_rules = (('compute', "compute_extension:quotas:update"),
+                    ('identity', 'identity:create_project'),)
 
     def get_link_url(self, project):
         step = 'update_quotas'
@@ -280,4 +282,5 @@ class TenantsTable(tables.DataTable):
         table_actions = (TenantFilterAction, CreateProject,
                          DeleteTenantsAction)
         pagination_param = "tenant_marker"
+
 
