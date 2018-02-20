@@ -73,12 +73,18 @@ class BaseUsage(object):
                 messages.error(self.request,
                                _("Invalid date format: "
                                  "Using today as default."))
+
+	# changes hide old data
+        if self.today.month <= 2 and self.today.year <= 2018:
+            args_start = (2018, 2, 19)
+
         self.start = self.get_start(*args_start)
         self.end = self.get_end(*args_end)
         return self.start, self.end
 
     def init_form(self):
         today = datetime.date.today()
+
         self.start = datetime.date(day=1, month=today.month, year=today.year)
         self.end = today
 
@@ -211,6 +217,8 @@ class BaseUsage(object):
             end = timezone.make_naive(end, timezone.utc)
             try:
                 self.usage_list = self.get_usage_list(start, end)
+                #Temporarily added for hiding the display
+                #self.usage_list = []
             except Exception:
                 exceptions.handle(self.request,
                                   _('Unable to retrieve usage information.'))
@@ -248,8 +256,7 @@ class BaseUsage(object):
 
 
 class GlobalUsage(BaseUsage):
-    #show_terminated = True
-    show_terminated = False
+    show_terminated = True
 
     def get_usage_list(self, start, end):
         return api.nova.usage_list(self.request, start, end)
@@ -263,22 +270,23 @@ class ProjectUsage(BaseUsage):
         show_terminated = self.request.GET.get('show_terminated',
                                                self.show_terminated)
         instances = []
-
-
         terminated_instances = []
         usage = api.nova.usage_get(self.request, self.project_id, start, end)
         # Attribute may not exist if there are no instances
         if hasattr(usage, 'server_usages'):
             now = self.today
             for server_usage in usage.server_usages:
+                 
                 # This is a way to phrase uptime in a way that is compatible
                 # with the 'timesince' filter. (Use of local time intentional.)
                 server_uptime = server_usage['uptime']
                 total_uptime = now - datetime.timedelta(seconds=server_uptime)
                 server_usage['uptime_at'] = total_uptime
+
                 if server_usage['ended_at'] and not show_terminated:
                     terminated_instances.append(server_usage)
                 else:
                     instances.append(server_usage)
         usage.server_usages = instances
         return (usage,)
+
