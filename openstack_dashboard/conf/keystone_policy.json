@@ -17,6 +17,8 @@
     "productcatalogue_role": "role:catalogue",
     "productcatalogue_required": "rule:productcatalogue_role",
 
+    "deny_m1specific_roles": "not role:provisioning and not role:finance and not role:support and not role:catalogue",
+
     "default": "rule:admin_required",
 
     "identity:get_region": "",
@@ -51,6 +53,7 @@
     "identity:create_project": "rule:admin_required or rule:provisioning_required",
     "identity:update_project": "rule:admin_required or rule:provisioning_required",
     "identity:delete_project": "rule:admin_required or rule:provisioning_required",
+    "identity:view_projects": "rule:deny_m1specific_roles",
 
     "identity:get_user": "rule:admin_required or rule:provisioning_required or rule:finance_required or rule:techsupport_required or rule:productcatalogue_required",
     "identity:list_users": "rule:admin_required or rule:provisioning_required or rule:finance_required or rule:techsupport_required or rule:productcatalogue_required",
