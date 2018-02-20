@@ -278,12 +278,14 @@ class CreatePlanForm(forms.SelfHandlingForm):
         self.fields['ref_id'].choices = gen_flavors(request)
 
     def handle(self, request, data):
+        print "================data in handle----------------"
+        print data
         try:
             attr_instances =  data.pop('attr_instances')
             attr_cpu = data.pop('attr_cpu')
             attr_ram = data.pop('attr_ram')
             attr_storage = data.pop('attr_storage')
-            if data['billing_type'] == RAB_BILLING_TYPE_ID:
+            if int(data['billing_type']) == RAB_BILLING_TYPE_ID:
                 data['attrs'] = {}
                 if attr_instances:
                     data['attrs']['instances'] = attr_instances
@@ -388,7 +390,7 @@ class ModifyPlanForm(forms.SelfHandlingForm):
             attr_cpu = data.pop('attr_cpu')
             attr_ram = data.pop('attr_ram')
             attr_storage = data.pop('attr_storage')
-            if data['billing_type'] == RAB_BILLING_TYPE_ID:
+            if int(data['billing_type']) == RAB_BILLING_TYPE_ID:
                 data['attrs'] = {}
                 if attr_instances:
                     data['attrs']['instances'] = attr_instances

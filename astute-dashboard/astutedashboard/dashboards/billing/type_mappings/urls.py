@@ -35,4 +35,10 @@ urlpatterns = [
         name='modify_volume_type_quotas'
     ),
 
+    url(
+        r'^(?P<id>[^/]+)/resend_welcome_letter/$',
+        views.email,
+        name='resend_welcome_letter'
+    ),
+
 ]

@@ -46,10 +46,20 @@ class DeleteBillingTypeMapping(tables.DeleteAction):
         delete_billing_type_mapping(request, id)
         return True
 
+class ResendWelcomeLetter(tables.LinkAction):
+    name = 'resend_welcome_letter'
+    verbose_name = _('Resend Welcome Letter')
+    url = 'horizon:billing:billing_type_mappings:resend_welcome_letter'
+    #ajax = True
+    #classes = ('ajax-modal',)
+    policy_rules = (("billing", "billing:edit_map"),)
+
 class BillingTypeMappingsTable(tables.DataTable):
     id = tables.Column('id', verbose_name=_('ID'))
     user = tables.Column('user', verbose_name=_('Account'))
     billing_type = tables.Column('billing_type', verbose_name=_('Billing Type'))
+    customer_name = tables.Column('customer_name', verbose_name=_('Customer Name'))
+    service_id = tables.Column('service_id', verbose_name=_('Service ID'))
 
 
     def get_object_id(self, datum):
@@ -61,6 +71,7 @@ class BillingTypeMappingsTable(tables.DataTable):
         row_actions = (
             UpdateAccount,
             ModifyVolumeTypeQuotas,
+            ResendWelcomeLetter,
             DeleteBillingTypeMapping
         )
         table_actions = (

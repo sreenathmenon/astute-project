@@ -17,7 +17,7 @@ from openstack_dashboard import api
 from openstack_dashboard.api import base
 from openstack_dashboard.api import cinder
 from openstack_dashboard.api import keystone
-from openstack_dashboard.api import neutron
+#from openstack_dashboard.api import neutron
 from openstack_dashboard.api import nova
 from openstack_dashboard.usage import quotas
 from openstack_dashboard.local import local_settings
@@ -33,7 +33,27 @@ except:
     raise
 
 
-from astutedashboard.common import get_billing_types, create_billing_type_mapping, modify_billing_type_mapping
+from astutedashboard.common import get_admin_ksclient, \
+                                   get_billing_types, \
+                                   create_billing_type_mapping, \
+                                   modify_billing_type_mapping, \
+                                   create_user_letter, \
+                                   get_projects, \
+                                   get_project, \
+                                   create_project, \
+                                   create_user, \
+                                   get_tenants, \
+                                   get_users, \
+                                   get_neutron_client, \
+                                   create_network, \
+                                   create_subnet, \
+                                   list_network, \
+                                   list_subnet, \
+                                   create_router, \
+                                   add_interface_to_router
+
+from astutedashboard.dashboards.billing.cipher import encrypt
+from openstack_dashboard.local.local_settings import CIPHER_KEY
 
 
 ACCOUNT_MAPPING_FIELDS = (
@@ -121,6 +141,7 @@ class CommonAccountGenericAction(workflows.Action):
         super(CommonAccountGenericAction, self).__init__(request, *args, **kwargs)
 
         # set domain values
+        #FIXME: Following line need to be checked for keystone V3 case (M1 specific roles)
         domain = keystone.get_default_domain(self.request)
         self.fields['domain_id'].widget.attrs['value'] = domain.id or ''
         self.fields['domain_name'].widget.attrs['value'] = domain.name or ''
@@ -239,7 +260,9 @@ class CreateAccountGenericAction(CommonAccountGenericAction):
         super(CreateAccountGenericAction, self).__init__(request, *args, **kwargs)
 
         # populate existing projects
-        (_projects, _) = keystone.tenant_list(self.request)
+        #Keystone connection
+        #(_projects, _) = keystone.tenant_list(self.request)
+        (_projects, _)  = get_tenants(self.request)
         projects = [(project.id, project.name) for project in _projects]
         self.fields['project_id'].choices = projects
 
@@ -264,14 +287,17 @@ class CreateAccountGenericAction(CommonAccountGenericAction):
                 self.add_error('project_name', msg_field_is_required)
             else:
                 # check if specified project is already exists
-                if len([p for p in keystone.tenant_list(self.request)[0] if p.name == project_name]) > 0:
+                #if len([p for p in keystone.tenant_list(self.request)[0] if p.name == project_name]) > 0:
+                if len([p for p in get_projects(self.request) if p.name == project_name]) > 0:
                     self.add_error('project_name', 'Project `%s` already exists.' % project_name)
 
             cleaned_data['username'] = (cleaned_data.get('username') or cleaned_data.get('project_name') or '').strip()
             username = cleaned_data['username']
             if username != '':
                 # check if specified user is already exists
-                if len([u for u in keystone.user_list(self.request) if u.name == username]) > 0:
+                #if len([u for u in keystone.user_list(self.request) if u.name == username]) > 0:
+                ks = get_admin_ksclient()
+                if len([u for u in get_users(self.request) if u.name == username]) > 0:
                     self.add_error('username', 'User `%s` already exists.' % username)
 
             password = cleaned_data.get('password')
@@ -471,9 +497,13 @@ class CreateAccountWorkflow(CommonAccountWorkflow):
         is_new_project = str(data['project_mapping']) == '0'
         project = None
 
+        #Keystone connection
+        ks = get_admin_ksclient()
+
         # handle project mapping
         if is_new_project:
             # create new project first
+            '''
             project = keystone.tenant_create(
                 request,
                 data.get('project_name'),
@@ -481,10 +511,17 @@ class CreateAccountWorkflow(CommonAccountWorkflow):
                 enabled=True,
                 domain=data.get('domain_id')
             )
+            '''
+            project = create_project(request, 
+                                     data.get('project_name'), 
+                                     description=data.get('description'), 
+                                     enabled=True, 
+                                     domain=data.get('domain_id'))
 
         else:
             # fetch project
-            project = keystone.tenant_get(request, data.get('project_id'))
+            #project = keystone.tenant_get(request, data.get('project_id'))
+            project = get_project(request, data.get('project_id'))
 
         # map project to billing account
         extra_fields = dict([(f, data[f]) for f in ACCOUNT_EXTRA_FIELDS])
@@ -499,7 +536,9 @@ class CreateAccountWorkflow(CommonAccountWorkflow):
         except:
             # clean up created project in case of error
             if is_new_project:
-                keystone.tenant_delete(request, project.id)
+                #FIXME: Need to check V3 related issues
+                #keystone.tenant_delete(request, project.id)
+                ks.tenants.delete(project.id)
             raise
 
 
@@ -507,6 +546,7 @@ class CreateAccountWorkflow(CommonAccountWorkflow):
         user = None
         try:
             if is_new_project:
+                '''
                 user = keystone.user_create(
                     request,
                     name=data.get('username'),
@@ -517,15 +557,32 @@ class CreateAccountWorkflow(CommonAccountWorkflow):
                     project=project.id,
                     domain=data.get('domain_id')
                 )
+                '''
+                user = create_user(request, 
+                                   name=data.get('username'),
+                                   password=data.get('password'),
+                                   email=data.get('authorized_officer_email'),
+                                   enabled=True,
+                                   description='General user of project `%s`' % project.name,
+                                   project=project.id,
+                                   domain=data.get('domain_id'))
+
         except:
             # clean up created project in case of error
             if is_new_project:
-                keystone.tenant_delete(request, project.id)
+                #keystone.tenant_delete(request, project.id)
+                #FIXME: Need to check V3 related issues
+                ks.tenants.delete(project.id)
             raise
 
         # do networking deployment
         if is_new_project and getattr(local_settings, 'ASTUDE_CONFIGURE_ACCOUNT_NETWORKING', True):
-            self._configure_networking(request, project)
+            try:
+                self._configure_networking(request, project)
+            except Exception as e:
+                print "Exception while adding network"
+                print e
+                pass
 
         self.name = project.name
 
@@ -541,6 +598,19 @@ class CreateAccountWorkflow(CommonAccountWorkflow):
         user = getattr(settings, 'ASTUTE_SMTP_USER', None)
         pswd = getattr(settings, 'ASTUTE_SMTP_PASS', None)
         html = render_to_string(WELCOME_EMAIL_TEMPLATE, data)
+
+        # save the email content for the project user
+        try:
+            success = bool(create_user_letter(request, {
+                "user": project.id,
+                "content": encrypt(CIPHER_KEY, html),
+            }))
+
+        except Exception as e:
+            print '*******mail*****'
+            print e
+            pass
+
         try:
             send_mail(
                 subject=subj,
@@ -573,11 +643,15 @@ class CreateAccountWorkflow(CommonAccountWorkflow):
         account_router_name = re.sub(rexp, project.name, account_router_name)
 
         # create network
-        network = neutron.network_create(request, tenant_id=project.id, name=internal_network_name)
-        subnet = neutron.subnet_create(request, network_id=network.id, tenant_id=project.id, name=internal_network_cidr, cidr=internal_network_cidr, ip_version=4)
+        #network = neutron.network_create(request, tenant_id=project.id, name=internal_network_name)
+        network = create_network(request, tenant_id=project.id, name=internal_network_name)
+        
+        #subnet = neutron.subnet_create(request, network_id=network.id, tenant_id=project.id, name=internal_network_cidr, cidr=internal_network_cidr, ip_version=4)
+        subnet = create_subnet(request, network_id=network.id, tenant_id=project.id, name=internal_network_cidr, cidr=internal_network_cidr, ip_version=4)
  
         # find external network
-        external_network = [n for n in neutron.network_list(request) if n.name == external_network_name]
+        #external_network = [n for n in neutron.network_list(request) if n.name == external_network_name]
+        external_network = [n for n in list_network(request) if n.name == external_network_name]
         if len(external_network) < 1:
             raise exceptions.HorizonException('Public network `%s` not found.' % external_network_name)
         external_network = external_network[0]
@@ -589,9 +663,13 @@ class CreateAccountWorkflow(CommonAccountWorkflow):
                 "network_id": external_network.id
             }
         }
-        router = neutron.router_create(request, **params)
+        
+        #router = neutron.router_create(request, **params)
+        router = create_router(request, **params)
+        
         # apply internal network into account router
-        neutron.router_add_interface(request, router.id, subnet_id=subnet.id)
+        #neutron.router_add_interface(request, router.id, subnet_id=subnet.id)
+        add_interface_to_router(request, router.id, subnet_id=subnet.id)
 
         return True
 

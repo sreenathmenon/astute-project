@@ -11,14 +11,14 @@
 from django.conf import settings
 
 from horizon.exceptions import HorizonException
-
+from horizon.utils import functions as utils
 from openstack_dashboard import api
 from openstack_dashboard.api import base
 from openstack_dashboard.api import cinder
 from openstack_dashboard.api import keystone
 from openstack_dashboard.api import nova
+from openstack_dashboard.api import neutron
 from openstack_dashboard.usage import quotas
-
 
 from openstack_dashboard.local.local_settings import \
     ADMIN_AUTH_URL, \
@@ -27,11 +27,13 @@ from openstack_dashboard.local.local_settings import \
     ADMIN_TENANT, \
     OPENSTACK_API_VERSIONS
 
-if OPENSTACK_API_VERSIONS['identity'] == 3:
+if OPENSTACK_API_VERSIONS['identity'] >= 3:
     from keystoneclient.v3 import client as ksclient
 else:
     from keystoneclient.v2_0 import client as ksclient
 
+from cinderclient import client as cclient
+from neutronclient.v2_0 import client
 
 import requests as http
 
@@ -50,6 +52,7 @@ def astute(request, endpoint, method='GET', data=None):
     if getattr(settings, 'DEBUG'):
         print "###", "ASTUTE RESPONSE ### " * 5
         print response, response.text
+        print response
 
     return response.json()
 
@@ -60,12 +63,21 @@ def get_admin_ksclient():
         password    = ADMIN_PASSWORD,
         tenant_name = ADMIN_TENANT,
         auth_url    = ADMIN_AUTH_URL
-    )
-    if OPENSTACK_API_VERSIONS['identity'] == 3:
+    )    
+    if OPENSTACK_API_VERSIONS['identity'] >= 3:
         keystone.tenants = keystone.projects
     return keystone
 
+def get_cinder_client():
+    cinder = cclient.Client('2', ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_TENANT, ADMIN_AUTH_URL)
+    return cinder
 
+def get_neutron_client():
+    neutron = client.Client(username = ADMIN_USERNAME,
+                                password = ADMIN_PASSWORD,
+                                tenant_name = ADMIN_TENANT,
+                                auth_url = ADMIN_AUTH_URL)
+    return neutron
 #
 # Common OpenStack API helpers
 #
@@ -81,7 +93,38 @@ def get_projects(request):
     #Passing the admin paramter temporarily to fix issue while loading as users with provisioning, finance, support or catalogue roles
     ks = get_admin_ksclient()
     return ks.tenants.list()
-    #return keystone.tenant_list(request, admin=False)[0]
+    #return keystone.tenant_list(request)[0]
+
+def get_tenants(request, paginate=False, marker=None, domain=None, 
+                user=None, admin=True, filters=None):
+    ksclient = get_admin_ksclient()
+    page_size = utils.get_page_size(request)
+    limit     = None
+
+    if paginate:
+        limit = page_size + 1
+
+    has_more = False
+
+    # if requesting the projects for the current user,
+    # return the list from the cache
+    if user == request.user.id:
+        projects = request.user.authorized_tenants
+    elif keystone.VERSIONS.active < 3:
+        projects = ksclient.tenants.list(limit, marker)
+        if paginate and len(projects) > page_size:
+            projects.pop(-1)
+            has_more = True
+    else:
+        kwargs = {
+            "domain": domain,
+            "user": user
+        }
+        if filters is not None:
+            kwargs.update(filters)
+        projects = ksclient.projects.list(**kwargs)
+    return (projects, has_more)
+
 
 # @returns project
 def get_project(request, id):
@@ -92,6 +135,98 @@ def get_project(request, id):
     ks = get_admin_ksclient()
     return ks.tenants.get(id)
     #return keystone.tenant_get(request, id)
+
+# @Create a new tenant/project
+def create_project(request, name, description=None, enabled=None, domain=None, **kwargs):
+    ks = get_admin_ksclient()
+
+    if keystone.VERSIONS.active < 3:
+        return ks.tenants.create(name, description, True, **kwargs)
+    else:
+        return ks.projects.create(name, domain, description=description, enabled=enabled, **kwargs)
+
+# @returns list users
+def get_users(request):
+    ks = get_admin_ksclient()
+    return ks.users.list()
+    #return ks.users.list()
+
+# @Create a new user
+def create_user(request, name=None, email=None, password=None, project=None,
+                enabled=None, domain=None, description=None):
+    ks = get_admin_ksclient()
+    if keystone.VERSIONS.active < 3:
+        user = ks.users.create(name, password, email, project, enabled)
+        return keystone.VERSIONS.upgrade_v2_user(user)
+    else:
+        return ks.users.create(name, password=password, email=email,
+                                  default_project=project, enabled=enabled,
+                                  domain=domain, description=description)
+
+
+def create_network(request, **kwargs):
+    
+    nclient = get_neutron_client()
+    # In the case network profiles are being used, profile id is needed.
+    if 'net_profile_id' in kwargs:
+        kwargs['n1kv:profile'] = kwargs.pop('net_profile_id')
+
+    if 'tenant_id' not in kwargs:
+        kwargs['tenant_id'] = request.user.project_id
+
+    body = {'network': kwargs}
+    network = nclient.create_network(body=body).get('network')
+    return neutron.Network(network)
+
+def create_subnet(request, network_id, **kwargs):
+    body = {'subnet': {'network_id': network_id}}
+
+    if 'tenant_id' not in kwargs:
+        kwargs['tenant_id'] = request.user.project_id
+    nclient = get_neutron_client()
+    body['subnet'].update(kwargs)
+    subnet = nclient.create_subnet(body=body).get('subnet')
+    return neutron.Subnet(subnet)
+
+def list_network(request, **params):
+    nclient = get_neutron_client()
+    networks = nclient.list_networks(**params).get('networks')
+    
+    # Get subnet list to expand subnet info in network list.
+    subnets = list_subnet(request)
+    subnet_dict = dict([(s['id'], s) for s in subnets])
+    
+    # Expand subnet list from subnet_id to values.
+    for n in networks:
+        # Due to potential timing issues, we can't assume the subnet_dict data
+        # is in sync with the network data.
+        n['subnets'] = [subnet_dict[s] for s in n.get('subnets', []) if
+                        s in subnet_dict]
+    return [neutron.Network(n) for n in networks]
+
+def list_subnet(request, **params):
+    nclient = get_neutron_client()
+    subnets = nclient.list_subnets(**params).get('subnets')
+    return [neutron.Subnet(s) for s in subnets]
+
+def create_router(request, **kwargs):
+    body = {'router': {}}
+    if 'tenant_id' not in kwargs:
+        kwargs['tenant_id'] = request.user.project_id
+    body['router'].update(kwargs)
+    nclient = get_neutron_client()
+    router = nclient.create_router(body=body).get('router')
+    return neutron.Router(router)
+
+def add_interface_to_router(request, router_id, subnet_id=None, port_id=None):
+    body = {}
+    if subnet_id:
+        body['subnet_id'] = subnet_id
+    if port_id:
+        body['port_id'] = port_id
+    nclient = get_neutron_client()
+    return nclient.add_interface_router(router_id, body)
+
 
 # @returns list of defined flavors
 def get_flavors(request):
@@ -251,6 +386,7 @@ def delete_plan(request, id):
 def get_billing_type_mappings(request, verbose=False):
     data = astute(request, 'billing/mapping/')
     if verbose:
+        print '1111'
         projects = dict([(p.id, p.name) for p in get_projects(request)])
         billing_types = dict([(bt['id'], bt) for bt in get_billing_types(request)])
         billing_types[0] = {'name': None}
@@ -259,15 +395,19 @@ def get_billing_type_mappings(request, verbose=False):
             item['user'] = projects.get(item['user']) or '!ERR: ' + item['user']
             item['billing_type_code'] = billing_types[item['billing_type']]['code']
             item['billing_type'] = billing_types[item['billing_type']]['name']
+            extra_fields = item['extra_fields']
+            item['customer_name'] = extra_fields['customer_name'] if extra_fields.has_key('customer_name') else '-'
+            item['service_id'] = extra_fields['service_id'] if extra_fields.has_key('service_id') else '-'
+            print '2222'
         # add discounts
         for item in data:
+            print '33333'
             item['discount_mapping'] = get_type_mapping_discount_mapping(request, item['user_id'], verbose)
     return data
 
 def get_billing_type_mapping(request, id, verbose=False):
     data = astute(request, 'billing/mapping/' + str(id))
-    #data['project'] = keystone.tenant_get(request, data['user'])
-    data['project'] =  get_project(request, data['user'])
+    data['project'] = get_project(request, data['user'])
     data['discount_mapping'] = get_type_mapping_discount_mapping(request, id, verbose)
     return data
 
@@ -324,6 +464,9 @@ def create_billing_plan_mapping(request, data):
 
 # modify billing plan mapping
 def modify_billing_plan_mapping(request, id, data):
+    print 'BILLING UPDATE'
+    print data
+    print 'BILLING UPDATEEEEEE'
     return astute(request, 'plan/mapping/' + str(id), 'PUT', data)
 
 # delete billing plan mapping
@@ -470,14 +613,19 @@ OVERRIDE_DISCOUNT_TYPE_ID = 2
 
 def get_project_volume_type_quotas(request, project_id):
     result = {}
-    client = cinder.cinderclient(request)
-    quotas = client.quotas.get(project_id)
+    #client = cinder.cinderclient(request)
+    #quotas = client.quotas.get(project_id)
+    client = get_cinder_client()
+    #quotas = client.quotas.get(project_id)
+    quotas  = client.quotas.get(project_id)
     for volume_type in client.volume_types.list():
         result[volume_type.name] = getattr(quotas, 'gigabytes_' + volume_type.name, -1)
     return result
 
 def modify_project_volume_type_quotas(request, project_id, quotas):
-    client = cinder.cinderclient(request)
+    #client = cinder.cinderclient(request)
+    client = get_cinder_client()
+    #return client.quotas.update(project_id, **quotas)
     return client.quotas.update(project_id, **quotas)
 
 #Features corresponding to Customer Interface
@@ -556,4 +704,12 @@ def get_user_billing_type(request, verbose=False):
     data = astute(request, 'billing/mapping/user?id=' + str(user_id))
     return data
 
+
+# create user letter
+def create_user_letter(request, data):
+    return astute(request, 'billing/letter/', 'POST', data)
+
+# get user letter
+def get_user_letter(request, id):
+    return astute(request, 'billing/letter/user?id=' + str(id))
 
