@@ -24,7 +24,10 @@ from keystoneclient.exceptions import Conflict  # noqa
 
 from openstack_dashboard import api
 from openstack_dashboard import policy
-
+from openstack_dashboard.api.astute import is_m1_user_admin, \
+                                           get_project, \
+                                           delete_tenant, \
+                                           update_tenant
 
 class RescopeTokenToProject(tables.LinkAction):
     name = "rescope"
@@ -154,7 +157,10 @@ class DeleteTenantsAction(tables.DeleteAction):
         return api.keystone.keystone_can_edit_project()
 
     def delete(self, request, obj_id):
-        api.keystone.tenant_delete(request, obj_id)
+        if is_m1_user_admin(request):
+            delete_tenant(request, obj_id)
+        else:
+            api.keystone.tenant_delete(request, obj_id)
 
     def handle(self, table, request, obj_ids):
         response = \
@@ -180,8 +186,11 @@ class UpdateRow(tables.Row):
     ajax = True
 
     def get_data(self, request, project_id):
-        project_info = api.keystone.tenant_get(request, project_id,
-                                               admin=True)
+        if is_m1_user_admin(request):
+            project_info = get_project(request, project_id)
+        else:
+            project_info = api.keystone.tenant_get(request, project_id,
+                                                   admin=True)
         return project_info
 
 
@@ -201,12 +210,18 @@ class UpdateCell(tables.UpdateAction):
             project_obj = datum
             # updating changed value by new value
             setattr(project_obj, cell_name, new_cell_value)
-            api.keystone.tenant_update(
-                request,
-                project_id,
-                name=project_obj.name,
-                description=project_obj.description,
-                enabled=project_obj.enabled)
+            if is_m1_user_admin(request):
+                update_tenant(request, 
+                              project_id,
+                              name=project_obj.name,
+                              description=project_obj.description,
+                              enabled=project_obj.enabled)
+            else:
+                api.keystone.tenant_update(request, 
+                                           project_id,
+                                           name=project_obj.name,
+                                           description=project_obj.description,
+                                           enabled=project_obj.enabled)
 
         except Conflict:
             # Returning a nice error message about name conflict. The message
@@ -265,3 +280,4 @@ class TenantsTable(tables.DataTable):
         table_actions = (TenantFilterAction, CreateProject,
                          DeleteTenantsAction)
         pagination_param = "tenant_marker"
+

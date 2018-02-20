@@ -38,6 +38,12 @@ from openstack_dashboard.dashboards.identity.xprojects \
     import workflows as project_workflows
 from openstack_dashboard.dashboards.project.overview \
     import views as project_views
+    
+from openstack_dashboard.api.astute import is_m1_user_admin, \
+                                           get_project, \
+                                           get_tenants, \
+                                           get_domain, \
+                                           get_tenant_quota_neutron
 
 PROJECT_INFO_FIELDS = ("domain_id",
                        "domain_name",
@@ -53,7 +59,10 @@ class TenantContextMixin(object):
     def get_object(self):
         tenant_id = self.kwargs['tenant_id']
         try:
-            return api.keystone.tenant_get(self.request, tenant_id, admin=True)
+            if is_m1_user_admin(self.request):
+                return get_project(self.request, tenant_id)
+            else:
+                return api.keystone.tenant_get(self.request, tenant_id, admin=True)
         except Exception:
             exceptions.handle(self.request,
                               _('Unable to retrieve project information.'),
@@ -82,23 +91,40 @@ class IndexView(tables.DataTableView):
         if policy.check((("identity", "identity:list_projects"),),
                         self.request):
             try:
-                tenants, self._more = api.keystone.tenant_list(
-                    self.request,
-                    domain=domain_context,
-                    paginate=True,
-                    marker=marker)
+                
+                if is_m1_user_admin(self.request):
+                    tenants, self._more = get_tenants(self.request, 
+                                                      domain=domain_context,
+                                                      paginate=True,
+                                                      marker=marker)
+                else:
+                    tenants, self._more = api.keystone.tenant_list(
+                        self.request,
+                        domain=domain_context,
+                        paginate=True,
+                        marker=marker)
+                
             except Exception:
                 exceptions.handle(self.request,
                                   _("Unable to retrieve project list."))
         elif policy.check((("identity", "identity:list_user_projects"),),
                           self.request):
             try:
-                tenants, self._more = api.keystone.tenant_list(
-                    self.request,
-                    user=self.request.user.id,
-                    paginate=True,
-                    marker=marker,
-                    admin=False)
+                if is_m1_user_admin(self.request):
+                    tenants, self._more = get_tenants(
+                        self.request,
+                        user=self.request.user.id,
+                        paginate=True,
+                        marker=marker,
+                        admin=False)
+                else:
+                    tenants, self._more = api.keystone.tenant_list(
+                        self.request,
+                        user=self.request.user.id,
+                        paginate=True,
+                        marker=marker,
+                        admin=False)
+
             except Exception:
                 exceptions.handle(self.request,
                                   _("Unable to retrieve project information."))
@@ -145,9 +171,13 @@ class CreateProjectView(workflows.WorkflowView):
                     # default quotas (LP#1204956). For now, use the values
                     # from the current project.
                     project_id = self.request.user.project_id
-                    quota_defaults += api.neutron.tenant_quota_get(
-                        self.request,
-                        tenant_id=project_id)
+                    if is_m1_user_admin(self.request):
+                        quota_defaults += get_tenant_quota_neutron(self.request, 
+                                                           tenant_id=project_id)
+                    else:
+                        quota_defaults += api.neutron.tenant_quota_get(self.request, 
+                                                                       tenant_id=project_id)
+                    
             except Exception:
                 error_msg = _('Unable to retrieve default Neutron quota '
                               'values.')
@@ -174,7 +204,10 @@ class UpdateProjectView(workflows.WorkflowView):
 
         try:
             # get initial project info
-            project_info = api.keystone.tenant_get(self.request, project_id,
+            if is_m1_user_admin(self.request):
+                project_info = get_project(self.request, project_id)
+            else:
+                project_info = api.keystone.tenant_get(self.request, project_id,
                                                    admin=True)
             for field in PROJECT_INFO_FIELDS:
                 initial[field] = getattr(project_info, field, None)
@@ -182,8 +215,11 @@ class UpdateProjectView(workflows.WorkflowView):
             # Retrieve the domain name where the project belong
             if keystone.VERSIONS.active >= 3:
                 try:
-                    domain = api.keystone.domain_get(self.request,
-                                                     initial["domain_id"])
+                    if is_m1_user_admin(self.request):
+                        domain = get_domain(self.request, initial["domain_id"])
+                    else:
+                        domain = api.keystone.domain_get(self.request,
+                                                         initial["domain_id"])
                     initial["domain_name"] = domain.name
                 except Exception:
                     exceptions.handle(self.request,
@@ -195,8 +231,12 @@ class UpdateProjectView(workflows.WorkflowView):
                                                       tenant_id=project_id)
             if api.base.is_service_enabled(self.request, 'network') and \
                     api.neutron.is_quotas_extension_supported(self.request):
-                quota_data += api.neutron.tenant_quota_get(
-                    self.request, tenant_id=project_id)
+                
+                if is_m1_user_admin(self.request):
+                    quota_data += get_tenant_quota_neutron(self.request, tenant_id=project_id)
+                else:
+                    quota_data += api.neutron.tenant_quota_get(self.request, tenant_id=project_id)
+                    
             for field in quotas.QUOTA_FIELDS:
                 initial[field] = quota_data.get(field).limit
         except Exception:
@@ -223,9 +263,13 @@ class DetailProjectView(generic.TemplateView):
     def get_data(self):
         try:
             project_id = self.kwargs['project_id']
-            project = api.keystone.tenant_get(self.request, project_id)
+            if is_m1_user_admin(self.request):
+                project = get_project(self.request, project_id)
+            else:
+                project = api.keystone.tenant_get(self.request, project_id)
         except Exception:
             exceptions.handle(self.request,
                               _('Unable to retrieve project details.'),
                               redirect=reverse(INDEX_URL))
         return project
+

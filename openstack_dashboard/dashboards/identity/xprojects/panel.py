@@ -19,13 +19,10 @@
 from django.utils.translation import ugettext_lazy as _
 
 import horizon
-from ksclient import get_admin_ksclient
-from openstack_dashboard.local.local_settings import OPENSTACK_API_VERSIONS, \
-                                                     M1_USER_ADMIN_ROLES
+
 
 class Tenants(horizon.Panel):
     name = _("Projects")
     slug = 'xprojects'
-    policy_rules = (("identity", "identity:view_projects"),)
-
-
+    policy_rules = (("identity", "identity:list_projects"),
+                    ("identity", "identity:list_user_projects"))

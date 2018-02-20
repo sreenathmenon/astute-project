@@ -34,6 +34,41 @@ from openstack_dashboard.api import keystone
 from openstack_dashboard.api import nova
 from openstack_dashboard.usage import quotas
 
+from openstack_dashboard.local.local_settings import ADMIN_USERNAME, \
+                                                     ADMIN_PASSWORD, \
+                                                     ADMIN_TENANT, \
+                                                     ADMIN_AUTH_URL, \
+                                                     API_RESULT_LIMIT, \
+                                                     OPENSTACK_API_VERSIONS, \
+                                                     M1_USER_ADMIN_ROLES, \
+                                                     OPENSTACK_KEYSTONE_DEFAULT_ROLE
+
+from openstack_dashboard.api.astute import is_m1_user_admin, \
+                                           get_project, \
+                                           get_tenants, \
+                                           get_domain, \
+                                           delete_tenant, \
+                                           update_tenant, \
+                                           gt_default_role, \
+                                           list_users, \
+                                           list_roles, \
+                                           gt_pjct_groups_roles, \
+                                           gt_pjct_users_roles, \
+                                           create_tenant, \
+                                           grant_tenant_user_role, \
+                                           add_gp_role, \
+                                           update_tenant, \
+                                           list_groups, \
+                                           roles_for_gp, \
+                                           add_gp_role, \
+                                           remove_group_role, \
+                                           add_user_role_to_tenant, \
+                                           remove_user_role_frm_tenant, \
+                                           get_tenant_quota_neutron, \
+                                           tenant_quota_update_neutron, \
+                                           tenant_quota_update_nova, \
+                                           tenant_quota_update_cinder
+
 INDEX_URL = "horizon:identity:xprojects:index"
 ADD_USER_URL = "horizon:identity:xprojects:create_user"
 PROJECT_GROUP_ENABLED = keystone.VERSIONS.active >= 3
@@ -89,10 +124,12 @@ class ProjectQuotaAction(workflows.Action):
 class UpdateProjectQuotaAction(ProjectQuotaAction):
     def clean(self):
         cleaned_data = super(UpdateProjectQuotaAction, self).clean()
+
         usages = quotas.tenant_quota_usages(
             self.request, tenant_id=self.initial['project_id'])
         # Validate the quota values before updating quotas.
         bad_values = []
+
         for key, value in cleaned_data.items():
             used = usages[key].get('used', 0)
             if value is not None and value >= 0 and used > value:
@@ -105,6 +142,7 @@ class UpdateProjectQuotaAction(ProjectQuotaAction):
                      'value(s): %s.') %
                    value_str)
             raise forms.ValidationError(msg)
+
         return cleaned_data
 
     class Meta(object):
@@ -192,7 +230,11 @@ class UpdateProjectMembersAction(workflows.MembershipAction):
 
         # Get the default role
         try:
-            default_role = api.keystone.get_default_role(self.request)
+            if is_m1_user_admin(request):
+                default_role = gt_default_role(request)
+            else:
+                default_role = api.keystone.get_default_role(request)
+                
             # Default role is necessary to add members to a project
             if default_role is None:
                 default = getattr(settings,
@@ -211,8 +253,11 @@ class UpdateProjectMembersAction(workflows.MembershipAction):
         # Get list of available users
         all_users = []
         try:
-            all_users = api.keystone.user_list(request,
-                                               domain=domain_id)
+            if is_m1_user_admin(request):
+                all_users = list_users(request, domain=domain_id)
+            else:
+                all_users = api.keystone.user_list(request,
+                                                   domain=domain_id)
         except Exception:
             exceptions.handle(request, err_msg)
         users_list = [(user.id, user.name) for user in all_users]
@@ -220,7 +265,10 @@ class UpdateProjectMembersAction(workflows.MembershipAction):
         # Get list of roles
         role_list = []
         try:
-            role_list = api.keystone.role_list(request)
+            if is_m1_user_admin(request):
+                role_list = list_roles(request)
+            else:
+                role_list = api.keystone.role_list(request)
         except Exception:
             exceptions.handle(request,
                               err_msg,
@@ -236,7 +284,10 @@ class UpdateProjectMembersAction(workflows.MembershipAction):
         # Figure out users & roles
         if project_id:
             try:
-                users_roles = api.keystone.get_project_users_roles(request,
+                if is_m1_user_admin(request):
+                    users_roles = gt_pjct_users_roles(request, project_id)
+                else:
+                    users_roles = api.keystone.get_project_users_roles(request,
                                                                    project_id)
             except Exception:
                 exceptions.handle(request,
@@ -264,7 +315,10 @@ class UpdateProjectMembers(workflows.UpdateMembersStep):
     def contribute(self, data, context):
         if data:
             try:
-                roles = api.keystone.role_list(self.workflow.request)
+                if is_m1_user_admin(self.workflow.request):
+                    roles = list_roles(self.workflow.request)
+                else:
+                    roles = api.keystone.role_list(self.workflow.request)
             except Exception:
                 exceptions.handle(self.workflow.request,
                                   _('Unable to retrieve user list.'))
@@ -290,7 +344,11 @@ class UpdateProjectGroupsAction(workflows.MembershipAction):
 
         # Get the default role
         try:
-            default_role = api.keystone.get_default_role(self.request)
+            if is_m1_user_admin(request):
+                default_role = gt_default_role(self.request)
+            else:
+                default_role = api.keystone.get_default_role(self.request)
+                
             # Default role is necessary to add members to a project
             if default_role is None:
                 default = getattr(settings,
@@ -309,8 +367,11 @@ class UpdateProjectGroupsAction(workflows.MembershipAction):
         # Get list of available groups
         all_groups = []
         try:
-            all_groups = api.keystone.group_list(request,
-                                                 domain=domain_id)
+            if is_m1_user_admin(request):
+                all_groups = list_groups(request, domain=domain_id)
+            else:
+                all_groups = api.keystone.group_list(request,
+                                                     domain=domain_id)
         except Exception:
             exceptions.handle(request, err_msg)
         groups_list = [(group.id, group.name) for group in all_groups]
@@ -318,7 +379,10 @@ class UpdateProjectGroupsAction(workflows.MembershipAction):
         # Get list of roles
         role_list = []
         try:
-            role_list = api.keystone.role_list(request)
+            if is_m1_user_admin(request):
+                role_list = list_roles(request)
+            else:
+                role_list = api.keystone.role_list(request)
         except Exception:
             exceptions.handle(request,
                               err_msg,
@@ -334,8 +398,10 @@ class UpdateProjectGroupsAction(workflows.MembershipAction):
         # Figure out groups & roles
         if project_id:
             try:
-                groups_roles = api.keystone.get_project_groups_roles(
-                    request, project_id)
+                if is_m1_user_admin(request):
+                    groups_roles = gt_pjct_groups_roles(request, project_id)
+                else:
+                    groups_roles = api.keystone.get_project_groups_roles(request, project_id)
             except Exception:
                 exceptions.handle(request,
                                   err_msg,
@@ -362,7 +428,10 @@ class UpdateProjectGroups(workflows.UpdateMembersStep):
     def contribute(self, data, context):
         if data:
             try:
-                roles = api.keystone.role_list(self.workflow.request)
+                if is_m1_user_admin(self.workflow.request):
+                    roles = list_roles(self.workflow.request)
+                else:
+                    roles = api.keystone.role_list(self.workflow.request)
             except Exception:
                 exceptions.handle(self.workflow.request,
                                   _('Unable to retrieve role list.'))
@@ -379,14 +448,21 @@ class CommonQuotaWorkflow(workflows.Workflow):
         # Update the project quota.
         nova_data = dict(
             [(key, data[key]) for key in quotas.NOVA_QUOTA_FIELDS])
-        nova.tenant_quota_update(request, project_id, **nova_data)
+        
+        if is_m1_user_admin(self.request):
+            tenant_quota_update_nova(request, project_id, **nova_data)
+        else:
+            nova.tenant_quota_update(request, project_id, **nova_data)
 
         if base.is_service_enabled(request, 'volume'):
             cinder_data = dict([(key, data[key]) for key in
                                 quotas.CINDER_QUOTA_FIELDS])
-            cinder.tenant_quota_update(request,
-                                       project_id,
-                                       **cinder_data)
+            if is_m1_user_admin(self.request):
+                tenant_quota_update_cinder(request, project_id,**cinder_data) 
+            else:
+                cinder.tenant_quota_update(request,
+                                           project_id,
+                                           **cinder_data) 
 
         if api.base.is_service_enabled(request, 'network') and \
                 api.neutron.is_quotas_extension_supported(request):
@@ -395,10 +471,13 @@ class CommonQuotaWorkflow(workflows.Workflow):
             for key in quotas.NEUTRON_QUOTA_FIELDS:
                 if key not in disabled_quotas:
                     neutron_data[key] = data[key]
-            api.neutron.tenant_quota_update(request,
-                                            project_id,
-                                            **neutron_data)
-
+                    
+            if is_m1_user_admin(self.request):     
+                tenant_quota_update_neutron(request, project_id, **neutron_data)
+            else:
+                api.neutron.tenant_quota_update(request,
+                                                project_id,
+                                                **neutron_data)
 
 class CreateProject(CommonQuotaWorkflow):
     slug = "create_project"
@@ -435,11 +514,19 @@ class CreateProject(CommonQuotaWorkflow):
         domain_id = data['domain_id']
         try:
             desc = data['description']
-            self.object = api.keystone.tenant_create(request,
-                                                     name=data['name'],
-                                                     description=desc,
-                                                     enabled=data['enabled'],
-                                                     domain=domain_id)
+            
+            if is_m1_user_admin(request):
+                self.object = create_tenant(request, name=data['name'],
+                                            description=desc,
+                                            enabled=data['enabled'],
+                                            domain=domain_id)
+            else:
+                self.object = api.keystone.tenant_create(request,
+                                                         name=data['name'],
+                                                         description=desc,
+                                                         enabled=data['enabled'],
+                                                         domain=domain_id)
+
             return self.object
         except exceptions.Conflict:
             msg = _('Project name "%s" is already used.') % data['name']
@@ -453,7 +540,11 @@ class CreateProject(CommonQuotaWorkflow):
         # update project members
         users_to_add = 0
         try:
-            available_roles = api.keystone.role_list(request)
+            if is_m1_user_admin(request):
+                available_roles = list_roles(request)
+            else:
+                available_roles = api.keystone.role_list(request)
+            
             member_step = self.get_step(PROJECT_USER_MEMBER_SLUG)
             # count how many users are to be added
             for role in available_roles:
@@ -466,10 +557,16 @@ class CreateProject(CommonQuotaWorkflow):
                 role_list = data[field_name]
                 users_added = 0
                 for user in role_list:
-                    api.keystone.add_tenant_user_role(request,
-                                                      project=project_id,
-                                                      user=user,
-                                                      role=role.id)
+                    if is_m1_user_admin(request):
+                        add_user_role_to_tenant(request, project=project_id, 
+                                                user=user,
+                                                role=role.id)
+                    else:
+                        api.keystone.add_tenant_user_role(request,
+                                                          project=project_id,
+                                                          user=user,
+                                                          role=role.id)
+                        
                     users_added += 1
                 users_to_add -= users_added
         except Exception:
@@ -487,7 +584,10 @@ class CreateProject(CommonQuotaWorkflow):
         # update project groups
         groups_to_add = 0
         try:
-            available_roles = api.keystone.role_list(request)
+            if is_m1_user_admin(request):
+                available_roles = list_roles(request)
+            else:
+                available_roles = api.keystone.role_list(request)
             member_step = self.get_step(PROJECT_GROUP_MEMBER_SLUG)
 
             # count how many groups are to be added
@@ -501,10 +601,15 @@ class CreateProject(CommonQuotaWorkflow):
                 role_list = data[field_name]
                 groups_added = 0
                 for group in role_list:
-                    api.keystone.add_group_role(request,
-                                                role=role.id,
-                                                group=group,
-                                                project=project_id)
+                    if is_m1_user_admin(request):
+                        add_gp_role(request, role=role.id, 
+                                    group=group,
+                                    project=project_id)
+                    else:
+                        api.keystone.add_group_role(request,
+                                                    role=role.id,
+                                                    group=group,
+                                                    project=project_id)
                     groups_added += 1
                 groups_to_add -= groups_added
         except Exception:
@@ -605,18 +710,26 @@ class UpdateProject(CommonQuotaWorkflow):
 
     @memoized.memoized_method
     def _get_available_roles(self, request):
-        return api.keystone.role_list(request)
+        if is_m1_user_admin(request):
+            return list_roles(request)
+        else:
+            return api.keystone.role_list(request)
 
     def _update_project(self, request, data):
         # update project info
         try:
             project_id = data['project_id']
-            return api.keystone.tenant_update(
-                request,
-                project_id,
-                name=data['name'],
-                description=data['description'],
-                enabled=data['enabled'])
+            
+            if is_m1_user_admin(request):
+                return update_tenant(request, project_id, 
+                                     name=data['name'], 
+                                     description=data['description'], 
+                                     enabled=data['enabled'])
+            else:
+                return api.keystone.tenant_update(request, project_id, 
+                                                  name=data['name'], 
+                                                  description=data['description'], 
+                                                  enabled=data['enabled'])
         except exceptions.Conflict:
             msg = _('Project name "%s" is already used.') % data['name']
             self.failure_message = msg
@@ -637,11 +750,18 @@ class UpdateProject(CommonQuotaWorkflow):
                 # Add it if necessary
                 if role.id not in current_role_ids:
                     # user role has changed
-                    api.keystone.add_tenant_user_role(
-                        request,
-                        project=project_id,
-                        user=user_id,
-                        role=role.id)
+                    if is_m1_user_admin(request):
+                        add_user_role_to_tenant(
+                            request,
+                            project=project_id,
+                            user=user_id,
+                            role=role.id)
+                    else:  
+                        api.keystone.add_tenant_user_role(
+                            request,
+                            project=project_id,
+                            user=user_id,
+                            role=role.id)
                 else:
                     # User role is unchanged, so remove it from the
                     # remaining roles list to avoid removing it later.
@@ -652,11 +772,18 @@ class UpdateProject(CommonQuotaWorkflow):
     def _remove_roles_from_user(self, request, project_id, user_id,
                                 current_role_ids):
         for id_to_delete in current_role_ids:
-            api.keystone.remove_tenant_user_role(
-                request,
-                project=project_id,
-                user=user_id,
-                role=id_to_delete)
+            if is_m1_user_admin(request):
+                remove_user_role_frm_tenant(
+                    request,
+                    project=project_id,
+                    user=user_id,
+                    role=id_to_delete)
+            else:
+                api.keystone.remove_tenant_user_role(
+                    request,
+                    project=project_id,
+                    user=user_id,
+                    role=id_to_delete)
 
     def _is_removing_self_admin_role(self, request, project_id, user_id,
                                      available_roles, current_role_ids):
@@ -694,8 +821,13 @@ class UpdateProject(CommonQuotaWorkflow):
             available_roles = self._get_available_roles(request)
             # Get the users currently associated with this project so we
             # can diff against it.
-            users_roles = api.keystone.get_project_users_roles(
-                request, project=project_id)
+            if is_m1_user_admin(request):
+                users_roles = gt_pjct_users_roles(request, 
+                                                  project=project_id)
+            else:
+                users_roles = api.keystone.get_project_users_roles(request, 
+                                                                   project=project_id)
+            
             users_to_modify = len(users_roles)
 
             for user_id in users_roles.keys():
@@ -725,10 +857,16 @@ class UpdateProject(CommonQuotaWorkflow):
                 field_name = member_step.get_member_field_name(role.id)
                 for user_id in data[field_name]:
                     if user_id not in users_roles:
-                        api.keystone.add_tenant_user_role(request,
-                                                          project=project_id,
-                                                          user=user_id,
-                                                          role=role.id)
+                        if is_m1_user_admin(request):
+                            add_user_role_to_tenant(request, 
+                                                    project=project_id,
+                                                    user=user_id,
+                                                    role=role.id)
+                        else:
+                            api.keystone.add_tenant_user_role(request,
+                                                              project=project_id,
+                                                              user=user_id,
+                                                              role=role.id)
                     users_added += 1
                 users_to_modify -= users_added
             return True
@@ -753,17 +891,27 @@ class UpdateProject(CommonQuotaWorkflow):
             available_roles = self._get_available_roles(request)
             # Get the groups currently associated with this project so we
             # can diff against it.
-            project_groups = api.keystone.group_list(request,
-                                                     domain=domain_id,
-                                                     project=project_id)
+            if is_m1_user_admin(request):
+                project_groups = list_groups(request, 
+                                             domain=domain_id, 
+                                             project=project_id)
+            else:
+                project_groups = api.keystone.group_list(request,
+                                                         domain=domain_id,
+                                                         project=project_id)
             groups_to_modify = len(project_groups)
             for group in project_groups:
                 # Check if there have been any changes in the roles of
                 # Existing project members.
-                current_roles = api.keystone.roles_for_group(
-                    self.request,
-                    group=group.id,
-                    project=project_id)
+                if is_m1_user_admin(self.request):
+                    current_roles = roles_for_gp(self.request, 
+                                                 group=group.id, 
+                                                 project=project_id)
+                else:
+                    current_roles = api.keystone.roles_for_group(self.request, 
+                                                                 group=group.id, 
+                                                                 project=project_id)
+                    
                 current_role_ids = [role.id for role in current_roles]
                 for role in available_roles:
                     # Check if the group is in the list of groups with
@@ -773,12 +921,20 @@ class UpdateProject(CommonQuotaWorkflow):
                         # Add it if necessary
                         if role.id not in current_role_ids:
                             # group role has changed
-                            api.keystone.add_group_role(
-                                request,
-                                role=role.id,
-                                group=group.id,
-                                project=project_id)
+                            if is_m1_user_admin(request):
+                                add_gp_role(
+                                    request,
+                                    role=role.id,
+                                    group=group.id,
+                                    project=project_id)
+                            else:
+                                api.keystone.add_group_role(
+                                    request,
+                                    role=role.id,
+                                    group=group.id,
+                                    project=project_id)   
                         else:
+                            
                             # Group role is unchanged, so remove it from
                             # the remaining roles list to avoid removing it
                             # later.
@@ -787,10 +943,16 @@ class UpdateProject(CommonQuotaWorkflow):
 
                 # Revoke any removed roles.
                 for id_to_delete in current_role_ids:
-                    api.keystone.remove_group_role(request,
-                                                   role=id_to_delete,
-                                                   group=group.id,
-                                                   project=project_id)
+                    if is_m1_user_admin(request):
+                        remove_group_role(request, 
+                                          role=id_to_delete, 
+                                          group=group.id, 
+                                          project=project_id)
+                    else:
+                        api.keystone.remove_group_role(request,
+                                                       role=id_to_delete,
+                                                       group=group.id,
+                                                       project=project_id)
                 groups_to_modify -= 1
 
             # Grant new roles on the project.
@@ -804,10 +966,16 @@ class UpdateProject(CommonQuotaWorkflow):
                 for group_id in data[field_name]:
                     if not filter(lambda x: group_id == x.id,
                                   project_groups):
-                        api.keystone.add_group_role(request,
-                                                    role=role.id,
-                                                    group=group_id,
-                                                    project=project_id)
+                        if is_m1_user_admin(request):
+                            add_gp_role(request, 
+                                        role=role.id, 
+                                        group=group_id, 
+                                        project=project_id)
+                        else:
+                            api.keystone.add_group_role(request,
+                                                        role=role.id,
+                                                        group=group_id,
+                                                        project=project_id)
                     groups_added += 1
                 groups_to_modify -= groups_added
             return True
@@ -858,3 +1026,4 @@ class UpdateProject(CommonQuotaWorkflow):
             return False
 
         return True
+
