@@ -66,8 +66,8 @@
     "plan:create_map": "rule:context_is_admin or rule:provisioning_required",
     "plan:edit_map": "rule:context_is_admin or rule:provisioning_required",
     "plan:delete_map": "rule:context_is_admin or rule:provisioning_required", 
-    "plan:associate": "rule:context_is_admin or rule:provisioning_required",
-    "plan:dissociate": "rule:context_is_admin or rule:provisioning_required",
+    "plan:associate": "",
+    "plan:dissociate": "",
     "plan:update_status_map": "rule:context_is_admin or rule:provisioning_required",
     
     "plan_attr:get": "",
