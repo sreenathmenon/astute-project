@@ -78,21 +78,26 @@ COMMON_HORIZONTAL_TEMPLATE = "identity/xprojects/_common_horizontal_form.html"
 
 
 class ProjectQuotaAction(workflows.Action):
+    cores = forms.IntegerField(min_value=-1, label=_("VCPUs"))
+    instances = forms.IntegerField(min_value=-1, label=_("Instances"))
+    gigabytes = forms.IntegerField(
+        min_value=-1, label=_("Total Size of Volumes and Snapshots (GB)"))
+    ram = forms.IntegerField(min_value=-1, label=_("RAM (MB)"))
+    floatingip = forms.IntegerField(min_value=-1, label=_("Floating IPs"))
+    floating_ips = forms.IntegerField(min_value=-1, label=_("Floating IPs"))
+    
     ifcb_label = _("Injected File Content (Bytes)")
     metadata_items = forms.IntegerField(min_value=-1,
                                         label=_("Metadata Items"))
-    cores = forms.IntegerField(min_value=-1, label=_("VCPUs"))
-    instances = forms.IntegerField(min_value=-1, label=_("Instances"))
+    
+    
     injected_files = forms.IntegerField(min_value=-1,
                                         label=_("Injected Files"))
     injected_file_content_bytes = forms.IntegerField(min_value=-1,
                                                      label=ifcb_label)
     volumes = forms.IntegerField(min_value=-1, label=_("Volumes"))
     snapshots = forms.IntegerField(min_value=-1, label=_("Volume Snapshots"))
-    gigabytes = forms.IntegerField(
-        min_value=-1, label=_("Total Size of Volumes and Snapshots (GB)"))
-    ram = forms.IntegerField(min_value=-1, label=_("RAM (MB)"))
-    floating_ips = forms.IntegerField(min_value=-1, label=_("Floating IPs"))
+    
     fixed_ips = forms.IntegerField(min_value=-1, label=_("Fixed IPs"))
     security_groups = forms.IntegerField(min_value=-1,
                                          label=_("Security Groups"))
@@ -104,7 +109,7 @@ class ProjectQuotaAction(workflows.Action):
                                         label=_("Security Groups"))
     security_group_rule = forms.IntegerField(min_value=-1,
                                              label=_("Security Group Rules"))
-    floatingip = forms.IntegerField(min_value=-1, label=_("Floating IPs"))
+    
     network = forms.IntegerField(min_value=-1, label=_("Networks"))
     port = forms.IntegerField(min_value=-1, label=_("Ports"))
     router = forms.IntegerField(min_value=-1, label=_("Routers"))
