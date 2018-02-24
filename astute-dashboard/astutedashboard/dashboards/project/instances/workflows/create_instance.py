@@ -955,7 +955,8 @@ class LaunchInstance(workflows.Workflow):
                              bool(context['delete_on_terminate']),
                          'uuid': volume_source_id,
                          'boot_index': '0',
-                         'volume_size': context['volume_size']
+                         # commented to fix the volume size and image metada size comparison exception
+                         #'volume_size': context['volume_size']
                          }
                     ]
                 else:
