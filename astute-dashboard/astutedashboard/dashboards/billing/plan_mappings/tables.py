@@ -42,6 +42,7 @@ class BillingPlanMappingsTable(tables.DataTable):
     id = tables.Column('id', verbose_name=_('ID'))
     user = tables.Column('user', verbose_name=_('Account'))
     plan = tables.Column('plan', verbose_name=_('Plan'))
+    vm_name = tables.Column('vm_name', verbose_name=_('VM Name'))
     qty =  tables.Column('qty', verbose_name=_('Qty.'))
     created_on =  tables.Column('created_on', verbose_name=_('Created On'))
     contract_period =  tables.Column('contract_period', verbose_name=_('Period'))

@@ -34,7 +34,7 @@ else:
 
 from cinderclient import client as cclient
 from neutronclient.v2_0 import client
-
+from novaclient import client as nova_client
 import requests as http
 
 
@@ -78,6 +78,15 @@ def get_neutron_client():
                                 tenant_name = ADMIN_TENANT,
                                 auth_url = ADMIN_AUTH_URL)
     return neutron
+
+def get_nova_client():
+    nova = nova_client.Client(2,
+                              ADMIN_USERNAME,
+                              ADMIN_PASSWORD,
+                              ADMIN_TENANT,
+                              ADMIN_AUTH_URL)
+    return nova
+
 #
 # Common OpenStack API helpers
 #
@@ -449,6 +458,11 @@ def get_billing_plan_mappings(request, project_id=None, verbose=False):
             plans[plan['id']] = plan['name']
             srv_types[plan['id']] = plan['service_type']
         for item in data:
+            attached_instance_data = get_instance(request, item['ref_id'])
+            if attached_instance_data:
+                item['vm_name'] = attached_instance_data.name
+            else:
+                item['vm_name'] = None
             item['user'] = projects.get(item['user'], None) or '!ERR: %s' % item['user']
             item['plan'] = plans.get(item['plan_id'], None) or '!ERR: %s' % item['plan_id']
             item['service_type'] = srv_types.get(item['plan_id'], None) or '!ERR: %s' % item['plan_id']
@@ -712,4 +726,11 @@ def create_user_letter(request, data):
 # get user letter
 def get_user_letter(request, id):
     return astute(request, 'billing/letter/user?id=' + str(id))
+
+#Fetch the instance details
+def get_instance(request, instance_id):
+    nvclient = get_nova_client()
+    return nova.Server(nvclient.servers.get(instance_id), request)
+
+
 
