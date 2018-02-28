@@ -458,9 +458,10 @@ def get_billing_plan_mappings(request, project_id=None, verbose=False):
             plans[plan['id']] = plan['name']
             srv_types[plan['id']] = plan['service_type']
         for item in data:
-            attached_instance_data = get_instance(request, item['ref_id'])
-            if attached_instance_data:
-                item['vm_name'] = attached_instance_data.name
+            if item['ref_id']:
+                attached_instance_data = get_instance(request, item['ref_id'])
+                if attached_instance_data:
+                    item['vm_name'] = attached_instance_data.name
             else:
                 item['vm_name'] = None
             item['user'] = projects.get(item['user'], None) or '!ERR: %s' % item['user']
