@@ -24,6 +24,7 @@ class ModifyBillingPlanMapping(tables.LinkAction):
     classes = ('ajax-modal',)
     policy_rules = (("billing", "plan:edit_map"),)
 
+'''
 class DeleteBillingPlanMapping(tables.DeleteAction):
     name = 'delete_billing_plan_mapping'
     verbose_name = _('Delete')
@@ -36,7 +37,7 @@ class DeleteBillingPlanMapping(tables.DeleteAction):
     def delete(self, request, id):
         delete_billing_plan_mapping(request, id)
         return True
-
+'''
 
 class BillingPlanMappingsTable(tables.DataTable):
     id = tables.Column('id', verbose_name=_('ID'))
@@ -57,10 +58,10 @@ class BillingPlanMappingsTable(tables.DataTable):
         verbose_name = _('Billing Plan Mappings')
         row_actions = (
             ModifyBillingPlanMapping,
-            DeleteBillingPlanMapping
+            #DeleteBillingPlanMapping
         )
         table_actions = (
             CreateBillingPlanMapping,
-            DeleteBillingPlanMapping
+            #DeleteBillingPlanMapping
         )
 
