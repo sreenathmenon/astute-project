@@ -7,6 +7,8 @@ from horizon import tables
 
 from astutedashboard.common import delete_billing_plan_mapping
 
+class PlanMappingFilterAction(tables.FilterAction):
+        name="plan_mapping_filter"
 
 class CreateBillingPlanMapping(tables.LinkAction):
     name = 'create_billing_plan_mapping'
@@ -62,6 +64,7 @@ class BillingPlanMappingsTable(tables.DataTable):
         )
         table_actions = (
             CreateBillingPlanMapping,
+            PlanMappingFilterAction
             #DeleteBillingPlanMapping
         )
 
