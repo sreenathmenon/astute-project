@@ -8,7 +8,17 @@ from horizon import tables
 from astutedashboard.common import delete_billing_plan_mapping
 
 class PlanMappingFilterAction(tables.FilterAction):
-        name="plan_mapping_filter"
+    name="plan_mapping_filter"
+    filter_type = "server"
+    verbose_name = _("Filter Plans")
+    needs_preloading = True
+    filter_choices = (("user", _("Subject contains "), True),
+                      ('plan', _("Priority ="), True),
+                      ('created_on', _("Created ="), True),
+                      ('vm_name', _("VM Name contains"), True),
+                      ('status', _("Status ="), True),
+                      ('contract_period',   _("Status ="), True))
+
 
 class CreateBillingPlanMapping(tables.LinkAction):
     name = 'create_billing_plan_mapping'
