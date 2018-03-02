@@ -12,12 +12,12 @@ class PlanMappingFilterAction(tables.FilterAction):
     filter_type = "server"
     verbose_name = _("Filter Plans")
     needs_preloading = True
-    filter_choices = (("user", _("Subject contains "), True),
-                      ('plan', _("Priority ="), True),
+    filter_choices = (("user", _("Account = "), True),
+                      ('plan', _("Plan ="), True),
                       ('created_on', _("Created ="), True),
-                      ('vm_name', _("VM Name contains"), True),
+                      ('vm_name', _("VM Name ="), True),
                       ('status', _("Status ="), True),
-                      ('contract_period',   _("Status ="), True))
+                      ('contract_period', _("Status ="), True))
 
 
 class CreateBillingPlanMapping(tables.LinkAction):
