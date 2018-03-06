@@ -231,11 +231,13 @@ class CreateAccountGenericAction(CommonAccountGenericAction):
             'data-switch-on': 'project_mapping',
             'data-project_mapping-0': _('Password')
         }),
+        required = False,
         regex=validators.password_validator(),
         error_messages={'invalid': validators.password_validator_msg()}
     )
     confirm_password = forms.CharField(
         label=_("Confirm Password"),
+        required = False,
         widget=forms.TextInput(attrs={
             'placeholder': 'must match password value above',
             'type': 'password',
@@ -278,6 +280,10 @@ class CreateAccountGenericAction(CommonAccountGenericAction):
 
         if str(cleaned_data.get('project_mapping')) == '0':
             # validate new project fields
+
+            #Password and confirm password field values are required
+            self.fields['password'].required = True
+            self.fields['confirm_password'].required = True
 
             msg_field_is_required = 'This field is required.'
 

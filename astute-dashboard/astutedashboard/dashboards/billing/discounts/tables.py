@@ -7,6 +7,11 @@ from horizon import tables
 
 from astutedashboard.common import delete_discount_mapping
 
+class DiscountMappingFilterAction(tables.FilterAction):
+    name="discount_mapping_filter"
+    verbose_name = _("Filter Discount Mappings")
+    needs_preloading = True
+
 class CreateBillingDiscount(tables.LinkAction):
     name = 'create_billing_discount'
     verbose_name = _('Create')
@@ -62,5 +67,6 @@ class BillingDiscountsTable(tables.DataTable):
         table_actions = (
             CreateBillingDiscount,
             DeleteBillingDiscount,
+            DiscountMappingFilterAction
         )
 

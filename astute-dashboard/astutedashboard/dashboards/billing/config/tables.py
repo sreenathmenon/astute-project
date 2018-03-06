@@ -174,6 +174,11 @@ class DeleteDiscount(tables.DeleteAction):
         delete_discount(request, id=id)
         return True
 
+class DiscountFilterAction(tables.FilterAction):
+    name="discount_listing_filter"
+    verbose_name = _("Filter Discounts")
+    needs_preloading = True
+
 class DiscountsTable(tables.DataTable):
     id = tables.Column('id', verbose_name=_('ID'))
     name = tables.Column('name', verbose_name=_('Name'))
@@ -199,7 +204,8 @@ class DiscountsTable(tables.DataTable):
         )
         table_actions = (
             CreateDiscount,
-            DeleteDiscount
+            DeleteDiscount,
+            DiscountFilterAction
         )
 
 
@@ -236,6 +242,11 @@ class DeletePlan(tables.DeleteAction):
         delete_plan(request, id)
         return True
 
+class PlansFilterAction(tables.FilterAction):
+    name="plan_listing_filter"
+    verbose_name = _("Filter Plans")
+    needs_preloading = True
+
 class PlansTable(tables.DataTable):
     id = tables.Column('id', verbose_name=_('ID'))
     name = tables.Column('name', verbose_name=_('Name'))
@@ -261,6 +272,7 @@ class PlansTable(tables.DataTable):
         )
         table_actions = (
             CreatePlan,
-            DeletePlan
+            DeletePlan,
+            PlansFilterAction
         )
 

@@ -7,6 +7,10 @@ from horizon import tables
 
 from astutedashboard.common import delete_billing_type_mapping
 
+class AccountFilterAction(tables.FilterAction):
+    name="account_listing_filter"
+    verbose_name = _("Filter Accounts")
+    needs_preloading = True
 
 class CreateAccount(tables.LinkAction):
     name = 'billing_create_account'
@@ -76,6 +80,7 @@ class BillingTypeMappingsTable(tables.DataTable):
         )
         table_actions = (
             CreateAccount,
-            DeleteBillingTypeMapping
+            DeleteBillingTypeMapping,
+            AccountFilterAction
         )
 
