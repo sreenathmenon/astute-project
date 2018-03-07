@@ -150,6 +150,35 @@ class ToggleEnabled(policy.PolicyTargetMixin, tables.BatchAction):
                 
             self.current_past_action = ENABLE
 
+class Disable2FAAction(policy.PolicyTargetMixin, tables.Action):
+    name = "disable2fa"
+    verbose_name = _("Disable Two Factor Authentication")
+    policy_rules = (("identity", "identity:update_user"),)
+    policy_target_attrs = (("user_id", "id"),)
+   
+    def single(self, table, request, obj_id):
+        user = table.get_object_by_id(obj_id)
+        try:
+            ksclient = get_admin_ksclient()
+            kwargs = {
+                "two_factor_enabled": False
+            }
+
+            #if 'two_factor_enabled' in user:
+            if user.two_factor_enabled:
+                if user.two_factor_enabled ==  True:
+                    update = ksclient.users.update(obj_id, **kwargs)
+                    msg = _('Successfully disabled Two Factor Authentication for "%s"'
+                            ) % user.name
+                    messages.success(request, msg)
+            else:
+                msg = _('Two Factor Authentication is already disabled for "%s"'
+                       ) % user.name
+                messages.info(request, msg)
+        except Exception:
+            horizon_exceptions.handle(request, _("Unable to disable Two Factor Authentication for the user!"))
+
+
 class DeleteUsersAction(tables.DeleteAction):
     @staticmethod
     def action_present(count):
@@ -294,7 +323,7 @@ class UsersTable(tables.DataTable):
         name = "xusers"
         verbose_name = _("Users")
         row_actions = (EditUserLink, ChangePasswordLink, ToggleEnabled,
-                       DeleteUsersAction)
+                       DeleteUsersAction, Disable2FAAction)
         table_actions = (UserFilterAction, CreateUserLink, DeleteUsersAction)
         row_class = UpdateRow
 
