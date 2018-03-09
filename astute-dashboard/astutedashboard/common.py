@@ -459,9 +459,12 @@ def get_billing_plan_mappings(request, project_id=None, verbose=False):
             srv_types[plan['id']] = plan['service_type']
         for item in data:
             if item['ref_id']:
-                attached_instance_data = get_instance(request, item['ref_id'])
-                if attached_instance_data:
-                    item['vm_name'] = attached_instance_data.name
+                item['vm_name'] = get_instance(request, item['ref_id'])
+
+                #Commented to fix the issue with Deleted VM
+                #attached_instance_data = get_instance(request, item['ref_id'])
+                #if attached_instance_data:
+                #    item['vm_name'] = attached_instance_data.name
             else:
                 item['vm_name'] = None
             item['user'] = projects.get(item['user'], None) or '!ERR: %s' % item['user']
@@ -731,7 +734,22 @@ def get_user_letter(request, id):
 #Fetch the instance details
 def get_instance(request, instance_id):
     nvclient = get_nova_client()
-    return nova.Server(nvclient.servers.get(instance_id), request)
+    
+    #Initializing the values
+    vm_name = ''
+    try:
+
+        #Fetching the instance details
+        instance_details = nova.Server(nvclient.servers.get(instance_id), request)
+        if instance_details:
+            vm_name = instance_details.name
+    except Exception as e:
+        print '-------------'
+        print e
+        print '-------------'
+        #Case when VM is in deleted state
+        return 'VM Deleted'
+    return vm_name
 
 
 
