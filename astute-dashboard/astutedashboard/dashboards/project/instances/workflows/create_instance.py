@@ -122,7 +122,7 @@ class SetInstanceDetailsAction(workflows.Action):
                                               filesizeformat(x.bytes)))))
 
     volume_size = forms.IntegerField(label=_("Device size (GB)"),
-                                     initial=20,
+                                     initial=250,
                                      min_value=20,
                                      required=False,
                                      help_text=_("Volume size in gigabytes "
