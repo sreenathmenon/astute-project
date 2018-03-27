@@ -57,14 +57,26 @@ class BillingTypesTable(tables.DataTable):
     class Meta(object):
         name = 'billing_types'
         verbose_name = _('Billing Types')
+
+        #Commented for disabling the edit and delete options
+        '''
         row_actions = (
             ModifyBillingType,
             DeleteBillingType
         )
+        '''
+        
+        #Need to display only the Create option
+        '''
         table_actions = (
             CreateBillingType,
             DeleteBillingType
         )
+        '''
+        table_actions = (
+            CreateBillingType,
+        )
+
 
 #
 # Service Types table
@@ -113,15 +125,26 @@ class ServiceTypesTable(tables.DataTable):
         name = 'service_types'
         verbose_name = _('Service Types')
         table_actions = ()
+        
+        #Commented to disable the Edit and Delete options
+        '''
         row_actions = (
             ModifyServiceType,
             DeleteServiceType
         )
+        '''
+      
+        #Need to display only the create option
+        '''
         table_actions = (
             CreateServiceType,
             DeleteServiceType
         )
+        '''
 
+        table_actions = (
+            CreateServiceType,
+        )
 
 #
 # Discount Types table
@@ -275,4 +298,3 @@ class PlansTable(tables.DataTable):
             DeletePlan,
             PlansFilterAction
         )
-
