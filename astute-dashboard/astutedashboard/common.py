@@ -395,7 +395,6 @@ def delete_plan(request, id):
 def get_billing_type_mappings(request, verbose=False):
     data = astute(request, 'billing/mapping/')
     if verbose:
-        print '1111'
         projects = dict([(p.id, p.name) for p in get_projects(request)])
         billing_types = dict([(bt['id'], bt) for bt in get_billing_types(request)])
         billing_types[0] = {'name': None}
@@ -407,10 +406,8 @@ def get_billing_type_mappings(request, verbose=False):
             extra_fields = item['extra_fields']
             item['customer_name'] = extra_fields['customer_name'] if extra_fields.has_key('customer_name') else '-'
             item['service_id'] = extra_fields['service_id'] if extra_fields.has_key('service_id') else '-'
-            print '2222'
         # add discounts
         for item in data:
-            print '33333'
             item['discount_mapping'] = get_type_mapping_discount_mapping(request, item['user_id'], verbose)
     return data
 
@@ -451,6 +448,10 @@ def get_project_type_mapping(request, id):
 def get_billing_plan_mappings(request, project_id=None, verbose=False):
     data = astute(request, 'plan/mapping/' + ('user?id=' + str(project_id) if project_id else ''))
     if verbose:
+
+        #Fetch the details of all instances
+        server_list = get_instances(request)
+
         projects = dict([(p.id, p.name) for p in get_projects(request)])
         plans = {}
         srv_types = {}
@@ -458,13 +459,17 @@ def get_billing_plan_mappings(request, project_id=None, verbose=False):
             plans[plan['id']] = plan['name']
             srv_types[plan['id']] = plan['service_type']
         for item in data:
-            if item['ref_id']:
-                item['vm_name'] = get_instance(request, item['ref_id'])
+            if str(item['ref_id']):
 
-                #Commented to fix the issue with Deleted VM
-                #attached_instance_data = get_instance(request, item['ref_id'])
-                #if attached_instance_data:
-                #    item['vm_name'] = attached_instance_data.name
+                #Fetch the dict containing id and name of each vm
+                #vm_info = (i for i in server_list if i["id"] == item['ref_id']).next()
+                vm_info = next((i for i in server_list if i["id"] == item['ref_id']), None)
+                
+                #Fetch the vm name and use it for displaying in frontend if it's present
+                if vm_info:
+                    item['vm_name'] = vm_info.get('name')
+                else:
+                    item['vm_name'] = None
             else:
                 item['vm_name'] = None
             item['user'] = projects.get(item['user'], None) or '!ERR: %s' % item['user']
@@ -482,9 +487,6 @@ def create_billing_plan_mapping(request, data):
 
 # modify billing plan mapping
 def modify_billing_plan_mapping(request, id, data):
-    print 'BILLING UPDATE'
-    print data
-    print 'BILLING UPDATEEEEEE'
     return astute(request, 'plan/mapping/' + str(id), 'PUT', data)
 
 # delete billing plan mapping
@@ -750,6 +752,19 @@ def get_instance(request, instance_id):
         #Case when VM is in deleted state
         return 'VM Deleted'
     return vm_name
+
+
+def get_instances(request):
+    nvclient = get_nova_client()
+    search_opts = {}
+    server_list = []
+    search_opts['all_tenants'] = True
+    for s in nvclient.servers.list(False, search_opts):
+        inst_name =  str(nova.Server(s, request).name)
+        inst_id   = str(nova.Server(s, request).id)
+        inst_dtls = {"id":inst_id, "name":inst_name}
+        server_list.append(inst_dtls)
+    return server_list
 
 
 
