@@ -540,7 +540,13 @@ def get_invoice(request, id, verbose=False):
         data['inv_to'] = data['inv_to'].split(' ')[0]
         data['last_updated'] = data['last_updated'].split(' ')[0]
         for item in data['items']:
-            item['plan'] = plans.get(item['plan_id'], None) or '!ERR: %s' % item['plan_id']
+            plan_details = get_plan(request, item['plan_id'])
+            
+            # Set plan name
+            if plan_details['service_code'] == 'IAAS':
+                item['plan'] = item['description']
+            else:
+                item['plan'] = plans.get(item['plan_id'], None) or '!ERR: %s' % item['plan_id']
     return data
 
 def modify_invoice(request, id, data):
