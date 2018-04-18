@@ -155,7 +155,7 @@ def email(request, *args, **kwargs):
 
     # send welcome email
     subj = getattr(settings, 'ASTUTE_WELCOME_EMAIL_SUBJ', 'Your new M1 Cloud Application Service')
-    sender = getattr(settings, 'ASTUTE_WELCOME_EMAIL_FROM', 'donotreplyCAS@m1.com.sg')
+    sender = getattr(settings, 'ASTUTE_WELCOME_EMAIL_FROM', 'm1CAS@m1.com.sg')
     host = getattr(settings, 'ASTUTE_SMTP_HOST', 'localhost')
     port = getattr(settings, 'ASTUTE_SMTP_PORT', 25)
     user = getattr(settings, 'ASTUTE_SMTP_USER', None)
