@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.template.loader import render_to_string
@@ -384,7 +385,7 @@ class CommonAccountDetailsAction(workflows.Action):
     authorized_officer_name = forms.CharField(label=_("Authorized Officer"), required=True)
     authorized_officer_nric = forms.CharField(label=_("    - NRIC"), required=True)
     authorized_officer_phone = forms.CharField(label=_("    - Phone"), required=True)
-    authorized_officer_email = forms.CharField(label=_("    - Email"), required=True)
+    authorized_officer_email = forms.CharField(label=_("Service Administer's Email"), required=True)
     account_manager = forms.CharField(label=_("Account Manager"), required=True)
 
 
