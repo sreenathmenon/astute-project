@@ -40,8 +40,6 @@ from glanceclient.v1 import client as glance_client
 
 import requests as http
 import datetime
-from openstack_dashboard.dashboards.project.images \
-    import utils as image_utils
 
 # Astute service base URL
 ASTUTE_BASE_URL = getattr(settings, 'ASTUTE_BASE_URL', 'http://os-controller1:9080/v1/')
@@ -792,12 +790,20 @@ def get_glance_client():
     return glance
 
 def get_image_list(request):
+    gc = glance.glanceclient(request)
+    image_list = gc.images.list()
+    windows_image_list = {}
+    for image in image_list:
+        #Filtering the Windows/SQL images
+        if "Windows" in image.name or "SQL" in image.name or "Win" in image.name:
+            windows_image_list[image.id] = image.name
+
     #gc = get_glance_client()
     #image_list = gc.images.list()
     #return image_list
     #images = image_utils.get_available_images(request, project_id=None, images_cache=None)
     #image_dict = dict([(image.id, image.name) for image in images])
-
+    '''
     #Temporary
     windows_image_list = {
         '140d8dd4-7c53-415a-aacd-b7d0bea60624': 'Windows Server 2012 R2 Standard', 
@@ -823,6 +829,7 @@ def get_image_list(request):
         'f4d79947-c76a-47c7-9b75-044e7e898192': 'Windows Server 2012 R2 Standard',
         'f753bf7c-a081-4d59-909d-32b74b695ffb': 'Windows Server 2008 R2 Standard',
     }
+    '''
     return windows_image_list
 
 def get_image_name(request, image_id):
