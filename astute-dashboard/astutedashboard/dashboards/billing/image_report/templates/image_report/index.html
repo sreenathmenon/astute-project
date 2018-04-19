@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load i18n %} 
+{% block title %}{% trans "Daily Count of Windows & Windows/SQL Instances"%}{% endblock %} 
+{% block main %}
+<h1>{% trans "Stats of Windows/SQL Instance Usage" %}</h1>
+
+    <hr class="header_rule">
+    <form id="sql-image-report-filter" class="form-inline">
+
+        <label>&nbsp;&nbsp;&nbsp;Date (YYYY-MM-DD)&nbsp;</label>
+        <label for="image-filter-period-from">From:</label>
+        <input id="image-filter-period-from" class="form-control" type="date" required pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}" name="image_usage_period_from" value="{{ image_filter_period_from }}">
+
+        <label for="image-filter-period-to">&nbsp;To:</label>
+        <input id="image-filter-period-to" class="form-control" type="date" required pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}" name="image_usage_period_to" value="{{ image_filter_period_to }}">
+        &nbsp;&nbsp;
+        <a id="image-filter-search" class="btn btn-default">
+            <span class="fa fa-search search-icon"></span>&nbsp;Search&#8230;
+        </a>
+
+        <div class="btn-group pull-right">
+            <button class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                <span class="fa fa-download"></span>&nbsp;Export&#8230&nbsp;<span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+                <li><a id="image-usage-data-export-as-csv" href="export_as_csv">Export as CSV&#8230</a></li>
+            </ul>
+        </div>
+    </form>
+    <script>
+
+        /* search filter handler */
+        function search_filter_handler () {
+            
+            // horizon admin invoices filter handler
+            var url = '{{ admin_image_report_filter_endpoint }}'
+            
+            // show spinner
+            horizon.modals.modal_spinner('Loading')
+            
+            // setup params
+            var params = {
+                'period_from': $('#image-filter-period-from').val(),
+                'period_to': $('#image-filter-period-to').val()
+            }
+            //console.log(params);
+            // send filter params
+            //console.log('setting admin/billing/invoice filter: ', url)
+            $.get(url, params).always(function () {
+    
+                // reload page
+                location.reload();
+            })
+        }
+
+        /* download helper */
+        function download (url) {
+            $('<iframe />')
+                .attr('src', url)
+                .hide()
+                .appendTo('body');
+        }
+
+        /* export as dat handler */
+        function export_as_handler (event) {
+            var url = $(event.target).attr('href')
+ 
+            // append invoice id for single download
+            event.preventDefault()
+            event.stopPropagation();
+
+            // trick for hide dropdown
+            $('body').trigger('click')
+            download(url)
+        }
+
+        /* entry point (DOM ready) */
+        $(document).ready(function () {
+
+            //Setup even handlers
+            $('#image-filter-search').on('click', search_filter_handler)
+            $('#image-usage-data-export-as-csv').on('click', export_as_handler)
+        })
+    </script>
+
+<div class="col-sm-12 row detail">
+    <dl class="dl-horizontal">
+        <table class="table table-bordered table-striped" id="invoice">
+	    <thead>
+	        <tr class="table_caption">
+		    <th colspan="8" class="table_header" data-column="0">		    	
+		        <div class="table_actions clearfix"></div>
+		    </th>
+		</tr>
+		<tr class="tablesorter-headerRow">
+		    <th class="normal_column">Windows/SQL Image Name</th>
+                    {% for date_val in report_date_list %}
+                        <th class="normal_column">{{ date_val }}</th>
+                    {% endfor %}
+   		</tr>
+            </thead>
+	    <tbody>
+                {% if usage_data %}
+                    {% for key, value in usage_data.items %}
+                        <tr> 
+                            <td class="normal_column">{{key}}</td>
+                            {% for k, v in value.items|dictsort:"0.lower" %}
+                                <td class="normal_column">{{ v }}</td>
+                            {% endfor %}
+			</tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td>No Usage Stats is available for this period</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+	</table>
+    </dl>
+</div>
+{% endblock %}
+
