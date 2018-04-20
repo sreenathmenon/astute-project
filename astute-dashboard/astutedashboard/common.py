@@ -10,7 +10,7 @@
 
 from django.conf import settings
 
-from horizon.exceptions import HorizonException
+from horizon import exceptions
 from horizon.utils import functions as utils
 from openstack_dashboard import api
 from openstack_dashboard.api import base
@@ -20,6 +20,8 @@ from openstack_dashboard.api import nova
 from openstack_dashboard.api import neutron
 from openstack_dashboard.api import glance
 from openstack_dashboard.usage import quotas
+from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ungettext_lazy
 
 from openstack_dashboard.local.local_settings import \
     ADMIN_AUTH_URL, \
@@ -858,10 +860,16 @@ def get_image_usage_report(request, period_from=None, period_to=None, verbose=Fa
     if image_data:
       for date in image_data:
         for image in image_data[date]:
-            
-            start            = datetime.datetime.strptime(period_from, "%Y-%m-%d")
-            end              = datetime.datetime.strptime(period_to, "%Y-%m-%d")
-            date_array       = (start + datetime.timedelta(days=x) for x in range(0, (end-start).days + 1 ))
+            try:
+                start            = datetime.datetime.strptime(period_from, "%Y-%m-%d")
+                end              = datetime.datetime.strptime(period_to, "%Y-%m-%d")
+                date_array       = (start + datetime.timedelta(days=x) for x in range(0, (end-start).days + 1 ))
+            except Exception:
+                image_usage_data = {}
+                report_date_list = []
+                exceptions.handle(request, _('Please check the entered date range!'))
+                return image_usage_data, report_date_list
+
             report_date_list = []
              
             #Fetch the image name
