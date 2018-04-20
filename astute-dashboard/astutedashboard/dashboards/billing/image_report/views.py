@@ -16,8 +16,8 @@ from django.http import HttpResponse
 
 from astutedashboard.common import \
     get_image_usage_report
-    
 
+ 
 class IndexView(generic.TemplateView):
 
     #Path to the template file
@@ -68,28 +68,23 @@ def search_filter(request):
 # export invoices in CSV format
 #
 def export_as_csv(request):
-    #
-    # get list of invoice(s) for export
-    #
-    # export all (filtered) invoices
+    
+    #Fetch the date range
     period_from = request.session.get('image_filter_period_from') or ''
     period_to = request.session.get('image_filter_period_to') or ''
 
     today      = datetime.datetime.now()
-    print today
     week_ago   = today - datetime.timedelta(days=6)
-    print week_ago
     today      = today.strftime('%Y-%m-%d')
-    print today
     week_ago   = week_ago.strftime('%Y-%m-%d')
-    print week_ago
 
     #Default condition during initial loading of the report
     if not period_from:
         period_from = str(week_ago)
     if not period_to:
-        period_to = str(today)
+        period_to   = str(today)
 
+    #Fetch the usage data and date list
     usage_data, report_date_list = get_image_usage_report(request,
                                         period_from,
                                         period_to,
@@ -103,7 +98,7 @@ def export_as_csv(request):
     #
     content = ""
     # title
-    content += "Windows/SQL Image Usage Report: %s\n" % timestamp[0:6]
+    content += "Windows/SQL Image Usage Report: %s\n" % timestamp[0:12]
     content += "Period: %s to %s\n" % (period_from, period_to)
     content += "\n"
 

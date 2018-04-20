@@ -790,46 +790,17 @@ def get_glance_client():
     return glance
 
 def get_image_list(request):
+
+    #Fetch the list of all images and loop through them
     gc = glance.glanceclient(request)
     image_list = gc.images.list()
     windows_image_list = {}
     for image in image_list:
+
         #Filtering the Windows/SQL images
         if "Windows" in image.name or "SQL" in image.name or "Win" in image.name:
             windows_image_list[image.id] = image.name
 
-    #gc = get_glance_client()
-    #image_list = gc.images.list()
-    #return image_list
-    #images = image_utils.get_available_images(request, project_id=None, images_cache=None)
-    #image_dict = dict([(image.id, image.name) for image in images])
-    '''
-    #Temporary
-    windows_image_list = {
-        '140d8dd4-7c53-415a-aacd-b7d0bea60624': 'Windows Server 2012 R2 Standard', 
-        '1d691c57-a25c-45ec-a34d-56dd45539952': 'MSSQL 2016 Server 2016 SP1', 
-        '2bd51595-08a6-41ad-be4a-413897e6897c': 'Win2K12 R2 + MS SQL 2012 Std',
-        '2d03f75a-ec41-4744-9956-47b810ede8a6': 'Windows Server 2012 R2 Standard',
-        '3bb8af1f-ab8d-4c4d-93f2-dff7ca3917ab': 'Windows Server 2016 SP1 Standard',
-        '495ec5e8-5365-43ff-b347-da5857d535b9': 'Windows Server 2012 R2 Standard',
-        '4dd55847-269e-49eb-bc10-f5cf42d0983e': 'Windows Server 2012 R2 Standard',
-        '675fbd42-c759-4690-b146-3715ec5359d8': 'Windows Server 2012 R2 Standard', 
-        '8b8e635e-17f4-4b8a-ab80-f28dea194d72': 'Windows Server 2008 R2 Standard',
-        '8dd064e2-2bfc-4841-bf3a-2b4fa4e7d11e': 'MSSQL 2016 Server 2016 SP1',
-        '96323b7c-c2d2-49aa-beab-5d5c71e74c86': 'Windows Server 2008 R2 Standard',
-        'abda6307-821e-4c81-9f62-de4bb262c24f': 'Windows Server 2008 R2 Standard',
-        'adf094bb-ea4e-4adb-9c43-bd0b6ea3936e': 'Windows Server 2012 R2 Standard',
-        'bee6e3df-adc9-4635-a23c-61afb57b2dda': 'Windows Server 2012 R2 Standard', 
-        'd0c639b1-1644-455c-b0e9-350a788fa531': 'Windows Server 2012 R2 Standard',
-        'd3fdcaa6-334b-44f4-af5d-cfa34edfd4e3': 'MSSQL 2012 Server 2008 R2',
-        'd7bb2afc-c6f7-4c66-8221-d6ff675a101c': 'Windows Server 2012 R2 Standard',
-        'd903981b-2dcc-4b01-aa98-272c2ebdd637': 'Windows Server 2012 R2 Standard',
-        'e51eab57-b96a-4d72-a728-87ede6d05cd6': 'Windows Server 2012 R2 Standard',
-        'f21da7d6-e27b-418f-8cc6-e008bc255e0c': 'MSSQL 2012 Server 2012 R2',
-        'f4d79947-c76a-47c7-9b75-044e7e898192': 'Windows Server 2012 R2 Standard',
-        'f753bf7c-a081-4d59-909d-32b74b695ffb': 'Windows Server 2008 R2 Standard',
-    }
-    '''
     return windows_image_list
 
 def get_image_name(request, image_id):
@@ -840,24 +811,19 @@ def get_image_name(request, image_id):
         image_name = 'ERROR!!' + str(image_id)
     return image_name
 
-
 def get_image_usage_report(request, period_from=None, period_to=None, verbose=False):
 
     #For setting default conditions   
     today      = datetime.datetime.now()
-    print today
     week_ago   = today - datetime.timedelta(days=6)
-    print week_ago
     today      = today.strftime('%Y-%m-%d') 
-    print today
     week_ago   = week_ago.strftime('%Y-%m-%d')
-    print week_ago
 
     #Default condition during initial loading of the report
     if not period_from:
         period_from = str(week_ago)
     if not period_to:
-        period_to = str(today)
+        period_to   = str(today)
 
     #Setting the url
     url = 'usage/imageCount/' + ('?' if period_from or period_to else '')
@@ -875,32 +841,27 @@ def get_image_usage_report(request, period_from=None, period_to=None, verbose=Fa
     report_date_list = []
 
     #Fetching the image list
-    original_image_list = get_image_list(request)
+    windows_image_list = get_image_list(request)
 
     #Initializing
-    usage_data  = {}
-    usage_data1 = {}
-    image_data  = data
+    usage_data       = {}
+    image_usage_data = {}
+    image_data       = data
 
     #Remove key-value pair if the key isn't present in the list of Windows/SQL images fetched above
     for date in list(image_data.keys()):
         for user in list(image_data[date].keys()):
-            if user not in original_image_list:
+            if user not in windows_image_list:
                 del image_data[date][user]
     
-    print '%%%%%%%'
-    print type(period_from)
-    print type(period_to)
-    print image_data
-
     #Loop through the data and convert into different dict format
     if image_data:
       for date in image_data:
         for image in image_data[date]:
             
-            start = datetime.datetime.strptime(period_from, "%Y-%m-%d")
-            end = datetime.datetime.strptime(period_to, "%Y-%m-%d")
-            date_array = (start + datetime.timedelta(days=x) for x in range(0, (end-start).days + 1 ))
+            start            = datetime.datetime.strptime(period_from, "%Y-%m-%d")
+            end              = datetime.datetime.strptime(period_to, "%Y-%m-%d")
+            date_array       = (start + datetime.timedelta(days=x) for x in range(0, (end-start).days + 1 ))
             report_date_list = []
              
             #Fetch the image name
@@ -908,24 +869,23 @@ def get_image_usage_report(request, period_from=None, period_to=None, verbose=Fa
 
             if image not in usage_data:
                 usage_data[image] = {}
-                usage_data1[image_name] = {}
+                image_usage_data[image_name] = {}
 
             usage_data[image][date] = image_data[date][image]
-            usage_data1[image_name][date] = int(image_data[date][image])
+            image_usage_data[image_name][date] = int(image_data[date][image])
 
             for date_object in date_array:
                 date_val = date_object.strftime("%Y-%m-%d")
                 report_date_list.append(date_val)
                 
                 #Setting default value
-                if date_val not in usage_data1[image_name]:
-                    usage_data1[image_name][date_val] = '0'
-   
-      #Return the usage data as well as the list of dates in the given date range
-      #return user_data1, report_date_list
+                if date_val not in image_usage_data[image_name]:
+                    image_usage_data[image_name][date_val] = '0'
     else:
-        usage_data1 = {}
+        image_usage_data = {}
         report_date_list = []
-        #return user_data1, report_date_list
-    return usage_data1, report_date_list
+
+    #Return the usage data as well as the list of dates in the given date range
+    return image_usage_data, report_date_list
+
 
