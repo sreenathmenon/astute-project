@@ -111,7 +111,7 @@ class ModifyVolumeTypeQuotasForm(forms.SelfHandlingForm):
 
         self.fields['project_name'].widget.attrs['readonly'] = 'readonly'
 
-        for volume_type, quota in self.initial['volume_types'].items():
+        for volume_type, quota in sorted(self.initial['volume_types'].items()):
             self.fields[volume_type] = forms.IntegerField(
                 label=volume_type + ' (GB)',
                 min_value=-1
