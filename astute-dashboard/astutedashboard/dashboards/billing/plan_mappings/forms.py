@@ -115,6 +115,7 @@ class ModifyBillingPlanMappingForm(forms.SelfHandlingForm):
             billing_plan_data = {}
             billing_plan_data['status'] = data.pop('status', None)
             billing_plan_data['contract_period'] = data.pop('contract_period', None)
+            billing_plan_data['qty'] = data.pop('qty', None)
             modify_billing_plan_mapping(request, id, billing_plan_data)
             return True
 
