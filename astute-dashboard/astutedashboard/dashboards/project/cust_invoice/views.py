@@ -34,7 +34,10 @@ class UserInvoiceDetailsView(generic.TemplateView):
     def get_context_data(self, **kwargs):
         context = super(UserInvoiceDetailsView, self).get_context_data(**kwargs)
         id = self.kwargs['invoice_id']
-        context['invoice'] = get_invoice(self.request, id, verbose=False)
+
+        #Commented the below line to make display in sync with admin >> billing >> invoice display
+        #context['invoice'] = get_invoice(self.request, id, verbose=False)
+        context['invoice'] = get_invoice(self.request, id, verbose=True)
         #context['invoice'] =  get_user_inv_details(self.request, id, verbose=True)
 
         plans = {}
@@ -47,7 +50,7 @@ class UserInvoiceDetailsView(generic.TemplateView):
             discounts[discount['id']] = discount
             
         for item in context['invoice']['items']:
-            item['plan'] = plans.get(item['plan_id'])['name']
+            #item['plan'] = plans.get(item['plan_id'])['name']
             item['bill_start_date'] = item['bill_start_date'].split(' ')[0]
             item['bill_end_date']   = item['bill_end_date'].split(' ')[0]
             disc = discounts.get(item.get('discount_id'))
