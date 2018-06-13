@@ -150,7 +150,7 @@ class CreateDiscountForm(forms.SelfHandlingForm):
     name = forms.CharField(max_length=255, label=_("Name"))
     code = forms.CharField(max_length=32, label=_("Code"))
     discount_type_id = forms.ChoiceField(label=_('Discount Type'), choices=[])
-    expiration_date = forms.DateField(label=_('Expiration Date'))
+    expiration_date = forms.DateField(label=_('Expiration Date (yyyy-mm-dd)'), required=False)
     amt = forms.FloatField(label=_('Amount'))
     notes = forms.CharField(max_length=255, label=_("Notes"), required=False)
 
@@ -161,6 +161,11 @@ class CreateDiscountForm(forms.SelfHandlingForm):
 
     def handle(self, request, data):
         data['expiration_date'] = str(data['expiration_date'])
+
+        # Check the expiration date
+        if data['expiration_date'] == '' or data['expiration_date'] == 'None':
+            data['expiration_date'] = None
+            
         try:
             create_discount(request, data)
             return True
@@ -175,7 +180,7 @@ class ModifyDiscountForm(forms.SelfHandlingForm):
     name = forms.CharField(max_length=255, label=_("Name"))
     code = forms.CharField(max_length=32, label=_("Code"))
     discount_type_id = forms.ChoiceField(label = _('Discount Type'), choices=[])
-    expiration_date = forms.DateField(label=_('Expiration Date'), required=False)
+    expiration_date = forms.DateField(label=_('Expiration Date (yyyy-mm-dd)'), required=False)
     amt = forms.FloatField(label=_('Amount'))
     notes = forms.CharField(max_length=255, label=_("Notes"), required=False)
 
@@ -186,6 +191,11 @@ class ModifyDiscountForm(forms.SelfHandlingForm):
 
     def handle(self, request, data):
         data['expiration_date'] = str(data['expiration_date'])
+
+        # Check the expiration date
+        if data['expiration_date'] == '' or data['expiration_date'] == 'None':
+            data['expiration_date'] = None
+            
         type_id = data.pop('id', None)
         if not type_id:
             exceptions.handle(request, _('Invalid request.'))
