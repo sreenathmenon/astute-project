@@ -615,9 +615,16 @@ def get_plan_mapping_discount_mapping(request, plan_map_id, verbose=False):
 
 
 def get_project_plan_mappings(request, project_id, unassociated=False):
+    '''
     return astute(request, 'plan/mapping/' + \
                            ('unassociated_plans' if unassociated else 'user') + \
                            '?id=' + str(project_id))
+    '''
+    data = astute(request, 'plan/mapping/' + \
+                           ('unassociated_plans' if unassociated else 'user') + \
+                           '?id=' + str(project_id))
+    return list({v['plan_id']:v for v in data}.values())
+
 
 def associate_plan_mapping_with_instance(request, plan_id, instance_id):
     data = {
