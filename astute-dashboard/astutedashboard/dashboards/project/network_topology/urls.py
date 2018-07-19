@@ -20,10 +20,11 @@
 from django.conf.urls import patterns
 from django.conf.urls import url
 
+#from openstack_dashboard.dashboards.project.network_topology import views
 from astutedashboard.dashboards.project.network_topology import views
 
-
 urlpatterns = patterns(
+    #'openstack_dashboard.dashboards.project.network_topology.views',
     'astutedashboard.dashboards.project.network_topology.views',
     url(r'^$', views.NetworkTopologyView.as_view(), name='index'),
     url(r'^router$', views.RouterView.as_view(), name='router'),

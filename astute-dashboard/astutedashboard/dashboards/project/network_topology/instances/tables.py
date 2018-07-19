@@ -14,6 +14,7 @@
 
 from django.utils.translation import ugettext_lazy as _
 
+#from openstack_dashboard.dashboards.project.instances import tables
 from astutedashboard.dashboards.project.instances import tables
 
 class InstancesTable(tables.InstancesTable):

@@ -17,7 +17,6 @@
 #    under the License.
 
 import json
-import six
 
 from django.conf import settings
 from django.core.urlresolvers import reverse
@@ -27,36 +26,45 @@ from django.utils.translation import ugettext_lazy as _
 from django.views.generic import View  # noqa
 
 from horizon import exceptions
-from horizon.utils.lazy_encoder import LazyTranslationEncoder
 from horizon import views
 
 from openstack_dashboard import api
 from openstack_dashboard.usage import quotas
 
+# from openstack_dashboard.dashboards.project.network_topology.instances \
+#     import tables as instances_tables
+# from openstack_dashboard.dashboards.project.network_topology.networks \
+#     import tables as networks_tables
+# from openstack_dashboard.dashboards.project.network_topology.ports \
+#     import tables as ports_tables
+# from openstack_dashboard.dashboards.project.network_topology.routers \
+#     import tables as routers_tables
+# from openstack_dashboard.dashboards.project.network_topology.subnets \
+#     import tables as subnets_tables
+
+
 from astutedashboard.dashboards.project.network_topology.instances \
     import tables as instances_tables
-
 from astutedashboard.dashboards.project.network_topology.networks \
     import tables as networks_tables
-
 from astutedashboard.dashboards.project.network_topology.ports \
     import tables as ports_tables
-
 from astutedashboard.dashboards.project.network_topology.routers \
     import tables as routers_tables
-
 from astutedashboard.dashboards.project.network_topology.subnets \
-    import tables as subnets_tables
+    import tables as subnets_tables  
+
+# from openstack_dashboard.dashboards.project.instances import\
+#     console as i_console
+# from openstack_dashboard.dashboards.project.instances import\
+#     views as i_views
+# from openstack_dashboard.dashboards.project.instances.workflows import\
+#     create_instance as i_workflows
 
 from astutedashboard.dashboards.project.instances import\
     console as i_console
-
-from astutedashboard.dashboards.project.instances.tables import \
-    STATUS_DISPLAY_CHOICES as instance_choices
-
 from astutedashboard.dashboards.project.instances import\
     views as i_views
-
 from astutedashboard.dashboards.project.instances.workflows import\
     create_instance as i_workflows
 
@@ -64,46 +72,14 @@ from openstack_dashboard.dashboards.project.networks.subnets import\
     views as s_views
 from openstack_dashboard.dashboards.project.networks.subnets import\
     workflows as s_workflows
-from openstack_dashboard.dashboards.project.networks.tables import \
-    DISPLAY_CHOICES as network_display_choices
-from openstack_dashboard.dashboards.project.networks.tables import \
-    STATUS_DISPLAY_CHOICES as network_choices
 from openstack_dashboard.dashboards.project.networks import\
     views as n_views
 from openstack_dashboard.dashboards.project.networks import\
     workflows as n_workflows
-from openstack_dashboard.dashboards.project.routers.ports.tables import \
-    DISPLAY_CHOICES as ports_choices
-from openstack_dashboard.dashboards.project.routers.ports.tables import \
-    STATUS_DISPLAY_CHOICES as ports_status_choices
 from openstack_dashboard.dashboards.project.routers.ports import\
     views as p_views
-from openstack_dashboard.dashboards.project.routers.tables import \
-    ADMIN_STATE_DISPLAY_CHOICES as routers_admin_choices
-from openstack_dashboard.dashboards.project.routers.tables import \
-    STATUS_DISPLAY_CHOICES as routers_status_choices
 from openstack_dashboard.dashboards.project.routers import\
     views as r_views
-
-
-class TranslationHelper(object):
-    """Helper class to provide the translations of instances, networks,
-    routers and ports from other parts of the code to the network topology
-    """
-    def __init__(self):
-        # turn translation tuples into dicts for easy access
-        self.instance = dict(instance_choices)
-        self.network = dict(network_choices)
-        self.network.update(dict(network_display_choices))
-        self.router = dict(routers_admin_choices)
-        self.router.update(dict(routers_status_choices))
-        self.port = dict(ports_choices)
-        self.port.update(dict(ports_status_choices))
-        # and turn all the keys into Uppercase for simple access
-        self.instance = {k.upper(): v for k, v in six.iteritems(self.instance)}
-        self.network = {k.upper(): v for k, v in six.iteritems(self.network)}
-        self.router = {k.upper(): v for k, v in six.iteritems(self.router)}
-        self.port = {k.upper(): v for k, v in six.iteritems(self.port)}
 
 
 class NTAddInterfaceView(p_views.AddInterfaceView):
@@ -227,7 +203,6 @@ class NetworkTopologyView(views.HorizonTemplateView):
 
 
 class JSONView(View):
-    trans = TranslationHelper()
 
     @property
     def is_router_enabled(self):
@@ -266,8 +241,7 @@ class JSONView(View):
                 console = None
 
             server_data = {'name': server.name,
-                           'status': self.trans.instance[server.status],
-                           'original_status': server.status,
+                           'status': server.status,
                            'task': getattr(server, 'OS-EXT-STS:task_state'),
                            'id': server.id}
             if console:
@@ -295,8 +269,7 @@ class JSONView(View):
                    'subnets': [{'id': subnet.id,
                                 'cidr': subnet.cidr}
                                for subnet in network.subnets],
-                   'status': self.trans.network[network.status],
-                   'original_status': network.status,
+                   'status': network.status,
                    'router:external': network['router:external']}
             self.add_resource_url('horizon:project:networks:subnets:detail',
                                   obj['subnets'])
@@ -328,8 +301,7 @@ class JSONView(View):
                     'name': publicnet.name_or_id,
                     'id': publicnet.id,
                     'subnets': subnets,
-                    'status': self.trans.network[publicnet.status],
-                    'original_status': publicnet.status,
+                    'status': publicnet.status,
                     'router:external': publicnet['router:external']})
 
         self.add_resource_url('horizon:project:networks:detail',
@@ -351,8 +323,7 @@ class JSONView(View):
 
         routers = [{'id': router.id,
                     'name': router.name_or_id,
-                    'status': self.trans.router[router.status],
-                    'original_status': router.status,
+                    'status': router.status,
                     'external_gateway_info': router.external_gateway_info}
                    for router in neutron_routers]
         self.add_resource_url('horizon:project:routers:detail', routers)
@@ -369,8 +340,7 @@ class JSONView(View):
                   'device_id': port.device_id,
                   'fixed_ips': port.fixed_ips,
                   'device_owner': port.device_owner,
-                  'status': self.trans.port[port.status],
-                  'original_status': port.status}
+                  'status': port.status}
                  for port in neutron_ports
                  if port.device_owner != 'network:router_ha_interface']
         self.add_resource_url('horizon:project:networks:ports:detail',
@@ -404,6 +374,5 @@ class JSONView(View):
                 'ports': self._get_ports(request),
                 'routers': self._get_routers(request)}
         self._prepare_gateway_ports(data['routers'], data['ports'])
-        json_string = json.dumps(data, cls=LazyTranslationEncoder,
-                                 ensure_ascii=False)
+        json_string = json.dumps(data, ensure_ascii=False)
         return HttpResponse(json_string, content_type='text/json')
